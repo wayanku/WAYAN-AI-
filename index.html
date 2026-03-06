@@ -80,29 +80,41 @@
             <div class="space-y-3">
                 <label class="text-xs text-gray-500 uppercase font-bold tracking-wider ml-1">Pilih Otak AI</label>
                 
-                <button onclick="switchModel('TinyLlama-1.1B-Chat-v0.4-q4f16_1-MLC')" class="w-full text-left p-3.5 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 active:border-indigo-500 transition flex justify-between items-center group">
-                    <div>
-                        <div class="font-bold text-gray-200 text-sm">⚡ TinyLlama (Ringan)</div>
-                        <div class="text-[10px] text-gray-500 mt-0.5">Wajib untuk iPhone • 680 MB</div>
-                    </div>
-                    <div id="check-TinyLlama" class="hidden text-indigo-400 font-bold text-xl">✓</div>
-                </button>
+                <!-- Model 1: Qwen2 0.5B (Pengganti TinyLlama) -->
+                <div class="flex gap-2">
+                    <button onclick="switchModel('Qwen2-0.5B-Instruct-q4f16_1-MLC')" class="flex-1 text-left p-3.5 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 active:border-indigo-500 transition flex justify-between items-center group">
+                        <div>
+                            <div class="font-bold text-gray-200 text-sm">⚡ Qwen2 0.5B (Super Ringan)</div>
+                            <div class="text-[10px] text-gray-500 mt-0.5">Sangat Cepat & Pintar • ~400 MB</div>
+                        </div>
+                        <div id="check-Qwen2-0.5B" class="hidden text-indigo-400 font-bold text-xl">✓</div>
+                    </button>
+                    <button onclick="deleteSpecificModel('Qwen2-0.5B-Instruct-q4f16_1-MLC')" class="px-3 rounded-xl border border-gray-700 bg-gray-800/30 hover:bg-red-900/30 hover:border-red-500/50 text-gray-500 hover:text-red-400 transition" title="Hapus Model Ini">🗑️</button>
+                </div>
 
-                <button onclick="switchModel('Qwen2-1.5B-Instruct-q4f16_1-MLC')" class="w-full text-left p-3.5 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 active:border-indigo-500 transition flex justify-between items-center group">
-                    <div>
-                        <div class="font-bold text-gray-200 text-sm">🧠 Qwen 1.5B</div>
-                        <div class="text-[10px] text-gray-500 mt-0.5">Seimbang • 1.0 GB</div>
-                    </div>
-                    <div id="check-Qwen2" class="hidden text-indigo-400 font-bold text-xl">✓</div>
-                </button>
+                <!-- Model 2: Llama 3.2 1B (Rekomendasi) -->
+                <div class="flex gap-2">
+                    <button onclick="switchModel('Llama-3.2-1B-Instruct-q4f16_1-MLC')" class="flex-1 text-left p-3.5 rounded-xl border border-indigo-500/50 bg-indigo-900/20 hover:bg-indigo-900/40 active:border-indigo-500 transition flex justify-between items-center group">
+                        <div>
+                            <div class="font-bold text-indigo-300 text-sm">🏆 Llama 3.2 1B (Terbaik)</div>
+                            <div class="text-[10px] text-gray-500 mt-0.5">Pintar & Cukup Ringan • ~850 MB</div>
+                        </div>
+                        <div id="check-Llama-3.2" class="hidden text-indigo-400 font-bold text-xl">✓</div>
+                    </button>
+                    <button onclick="deleteSpecificModel('Llama-3.2-1B-Instruct-q4f16_1-MLC')" class="px-3 rounded-xl border border-gray-700 bg-gray-800/30 hover:bg-red-900/30 hover:border-red-500/50 text-gray-500 hover:text-red-400 transition" title="Hapus Model Ini">🗑️</button>
+                </div>
 
-                <button onclick="switchModel('gemma-2b-it-q4f16_1-MLC')" class="w-full text-left p-3.5 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 active:border-indigo-500 transition flex justify-between items-center group">
-                    <div>
-                        <div class="font-bold text-gray-200 text-sm">💎 Gemma 2B</div>
-                        <div class="text-[10px] text-gray-500 mt-0.5">Paling Pintar • 1.4 GB</div>
-                    </div>
-                    <div id="check-gemma" class="hidden text-indigo-400 font-bold text-xl">✓</div>
-                </button>
+                <!-- Model 3: Gemma 2B -->
+                <div class="flex gap-2">
+                    <button onclick="switchModel('gemma-2b-it-q4f16_1-MLC')" class="flex-1 text-left p-3.5 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 active:border-indigo-500 transition flex justify-between items-center group">
+                        <div>
+                            <div class="font-bold text-gray-200 text-sm">💎 Gemma 2B</div>
+                            <div class="text-[10px] text-gray-500 mt-0.5">Paling Pintar • 1.4 GB</div>
+                        </div>
+                        <div id="check-gemma" class="hidden text-indigo-400 font-bold text-xl">✓</div>
+                    </button>
+                    <button onclick="deleteSpecificModel('gemma-2b-it-q4f16_1-MLC')" class="px-3 rounded-xl border border-gray-700 bg-gray-800/30 hover:bg-red-900/30 hover:border-red-500/50 text-gray-500 hover:text-red-400 transition" title="Hapus Model Ini">🗑️</button>
+                </div>
             </div>
 
             <!-- System Prompt -->
@@ -117,7 +129,7 @@
             <div class="pt-6 border-t border-gray-800">
                  <button onclick="deleteModel()" class="w-full text-left text-red-400 text-xs hover:text-red-300 py-3 px-2 rounded hover:bg-red-500/10 transition flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    Hapus Data Model (Reset Memori)
+                    Reset Semua Data (Factory Reset)
                 </button>
             </div>
         </div>
@@ -145,10 +157,10 @@
         <h2 class="text-2xl font-bold mb-2 text-white">Wayan AI Offline</h2>
         <p class="text-sm text-gray-400 mb-8 max-w-xs">Model <span id="last-model-name" class="text-indigo-400 font-mono font-bold">...</span> terdeteksi di memori.</p>
         
-        <button onclick="initEngine(lastUsedModel)" class="w-full max-w-xs py-3.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 rounded-xl font-bold text-white transition shadow-lg">
+        <button id="btn-resume" class="w-full max-w-xs py-3.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 rounded-xl font-bold text-white transition shadow-lg">
             Lanjutkan Chat
         </button>
-        <button onclick="toggleSidebar(); document.getElementById('resume-screen').classList.add('hidden')" class="mt-6 text-xs text-gray-500 hover:text-gray-300 underline py-2">
+        <button onclick="document.getElementById('resume-screen').classList.add('hidden'); toggleSidebar();" class="mt-6 text-xs text-gray-500 hover:text-gray-300 underline py-2">
             Pilih Model Lain
         </button>
     </div>
@@ -169,6 +181,8 @@
                     <button onclick="fillInput('Jelaskan apa itu HTML dalam bahasa sederhana')" class="p-3.5 bg-gray-800/40 hover:bg-gray-800 border border-gray-700/50 hover:border-gray-600 rounded-xl text-sm text-gray-300 transition text-left flex items-center gap-3 group"><span class="text-lg group-hover:scale-110 transition">💻</span> Jelaskan apa itu HTML</button>
                 </div>
             </div>
+            <!-- Anchor untuk auto-scroll -->
+            <div id="chat-anchor"></div>
         </div>
 
         <!-- PROGRESS DOWNLOAD (Floating) -->
@@ -239,6 +253,13 @@
             const savedPrompt = localStorage.getItem("wayan_system_prompt");
             if (savedPrompt) document.getElementById("system-prompt-input").value = savedPrompt;
 
+            // FIX: Event listener untuk tombol resume agar tidak ada error 'lastUsedModel not defined'
+            document.getElementById('btn-resume').addEventListener('click', () => {
+                if (lastUsedModel) {
+                    initEngine(lastUsedModel);
+                }
+            });
+
             requestPersistentStorage(); // Minta penyimpanan permanen
             initMemoryMonitor(); // Jalankan monitor memori
         };
@@ -250,7 +271,7 @@
 
             // FIX: Peringatan Memori untuk iPhone/iOS
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            if (isIOS && (modelId.includes("Qwen") || modelId.includes("gemma"))) {
+            if (isIOS && (modelId.includes("Llama-3.2") || modelId.includes("gemma"))) {
                 const proceed = confirm("⚠️ Peringatan Memori iPhone:\n\nModel ini (Qwen/Gemma) membutuhkan RAM besar. Di iPhone, aplikasi sering keluar sendiri (Crash) karena batas memori Apple.\n\nSangat disarankan menggunakan 'TinyLlama' agar lancar.\n\nTetap ingin mencoba?");
                 if (!proceed) {
                     toggleSidebar();
@@ -450,8 +471,8 @@
                     if (delta) {
                         fullText += delta;
                         contentWrapper.innerHTML = marked.parse(fullText); // Update tampilan dengan markdown
-                        const box = document.getElementById("chat-box");
-                        box.scrollTop = box.scrollHeight; // Selalu scroll ke bawah
+                        // FIX: Gunakan anchor untuk scroll yang lebih andal
+                        document.getElementById('chat-anchor').scrollIntoView();
                     }
                 }
                 
@@ -500,8 +521,10 @@
                    </div>`;
             
             box.appendChild(div);
-            // Smooth scroll fix for mobile
-            setTimeout(() => { box.scrollTop = box.scrollHeight; }, 100);
+            // FIX: Gunakan anchor untuk scroll yang lebih andal
+            setTimeout(() => {
+                document.getElementById('chat-anchor').scrollIntoView({ behavior: "smooth", block: "end" });
+            }, 100);
         }
 
         function addLoading() {
@@ -525,7 +548,9 @@
                 </div>
             `;
             box.appendChild(div);
-            setTimeout(() => { box.scrollTop = box.scrollHeight; }, 100);
+            setTimeout(() => {
+                document.getElementById('chat-anchor').scrollIntoView({ behavior: "smooth", block: "end" });
+            }, 100);
             return id;
         }
 
@@ -545,16 +570,16 @@
         }
 
         function formatModelName(raw) {
-            if(raw.includes("Tiny")) return "TinyLlama";
-            if(raw.includes("Qwen")) return "Qwen 1.5B";
+            if(raw.includes("0.5B")) return "Qwen2 0.5B";
+            if(raw.includes("Llama-3.2")) return "Llama 3.2 1B";
             if(raw.includes("gemma")) return "Gemma 2B";
             return "AI Model";
         }
 
         function updateMenuCheck(activeId) {
             document.querySelectorAll("[id^='check-']").forEach(el => el.classList.add("hidden"));
-            if(activeId.includes("Tiny")) document.getElementById("check-TinyLlama").classList.remove("hidden");
-            if(activeId.includes("Qwen")) document.getElementById("check-Qwen2").classList.remove("hidden");
+            if(activeId.includes("0.5B")) document.getElementById("check-Qwen2-0.5B").classList.remove("hidden");
+            if(activeId.includes("Llama-3.2")) document.getElementById("check-Llama-3.2").classList.remove("hidden");
             if(activeId.includes("gemma")) document.getElementById("check-gemma").classList.remove("hidden");
         }
 
@@ -618,6 +643,29 @@
                 }
             } catch (err) {
                 console.log('Wake Lock gagal:', err);
+            }
+        }
+
+        // --- 7. DELETE SPECIFIC MODEL ---
+        window.deleteSpecificModel = async function(modelId) {
+            if(!confirm(`Hapus data model ini saja untuk menghemat ruang?\n\nModel: ${formatModelName(modelId)}`)) return;
+            
+            const keys = await caches.keys();
+            let deletedCount = 0;
+            
+            for(const key of keys) {
+                // WebLLM menyimpan cache dengan nama model di dalamnya
+                if(key.includes(modelId)) {
+                    await caches.delete(key);
+                    deletedCount++;
+                }
+            }
+            
+            if(deletedCount > 0) {
+                alert(`Berhasil! Data ${formatModelName(modelId)} telah dihapus dari HP.`);
+                if(lastUsedModel === modelId) location.reload(); // Reload jika model yang dihapus sedang dipakai
+            } else {
+                alert("Data model ini tidak ditemukan (mungkin belum pernah diunduh).");
             }
         }
 
