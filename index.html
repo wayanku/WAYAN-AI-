@@ -80,40 +80,64 @@
             <div class="space-y-3">
                 <label class="text-xs text-gray-500 uppercase font-bold tracking-wider ml-1">Pilih Otak AI</label>
                 
-                <!-- Model 1: Qwen2 0.5B (Pengganti TinyLlama) -->
+                <!-- Model 1: Qwen 2.5 1.5B (Paling Ideal) -->
                 <div class="flex gap-2">
-                    <button onclick="switchModel('Qwen2-0.5B-Instruct-q4f16_1-MLC')" class="flex-1 text-left p-3.5 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 active:border-indigo-500 transition flex justify-between items-center group">
+                    <button onclick="switchModel('Qwen2.5-1.5B-Instruct-q4f16_1-MLC')" class="flex-1 text-left p-3.5 rounded-xl border border-indigo-500/50 bg-indigo-900/20 hover:bg-indigo-900/40 active:border-indigo-500 transition flex justify-between items-center group">
                         <div>
-                            <div class="font-bold text-gray-200 text-sm">⚡ Qwen2 0.5B (Super Ringan)</div>
-                            <div class="text-[10px] text-gray-500 mt-0.5">Sangat Cepat & Pintar • ~400 MB</div>
+                            <div class="font-bold text-indigo-300 text-sm">🏆 Qwen 2.5 1.5B (Ideal)</div>
+                            <div class="text-[10px] text-gray-500 mt-0.5">Bahasa Indo Bagus • ~1.0 GB</div>
                         </div>
-                        <div id="check-Qwen2-0.5B" class="hidden text-indigo-400 font-bold text-xl">✓</div>
+                        <div id="check-Qwen2.5-1.5B" class="hidden text-indigo-400 font-bold text-xl">✓</div>
                     </button>
-                    <button onclick="deleteSpecificModel('Qwen2-0.5B-Instruct-q4f16_1-MLC')" class="px-3 rounded-xl border border-gray-700 bg-gray-800/30 hover:bg-red-900/30 hover:border-red-500/50 text-gray-500 hover:text-red-400 transition" title="Hapus Model Ini">🗑️</button>
+                    <button onclick="deleteSpecificModel('Qwen2.5-1.5B-Instruct-q4f16_1-MLC')" class="px-3 rounded-xl border border-gray-700 bg-gray-800/30 hover:bg-red-900/30 hover:border-red-500/50 text-gray-500 hover:text-red-400 transition" title="Hapus Model Ini">🗑️</button>
                 </div>
 
-                <!-- Model 2: Llama 3.2 1B (Rekomendasi) -->
+                <!-- Model 2: Llama 3.2 3B (Paling Pintar) -->
                 <div class="flex gap-2">
-                    <button onclick="switchModel('Llama-3.2-1B-Instruct-q4f16_1-MLC')" class="flex-1 text-left p-3.5 rounded-xl border border-indigo-500/50 bg-indigo-900/20 hover:bg-indigo-900/40 active:border-indigo-500 transition flex justify-between items-center group">
+                    <button onclick="switchModel('Llama-3.2-3B-Instruct-q4f16_1-MLC')" class="flex-1 text-left p-3.5 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 active:border-indigo-500 transition flex justify-between items-center group">
                         <div>
-                            <div class="font-bold text-indigo-300 text-sm">🏆 Llama 3.2 1B (Terbaik)</div>
-                            <div class="text-[10px] text-gray-500 mt-0.5">Pintar & Cukup Ringan • ~850 MB</div>
+                            <div class="font-bold text-gray-200 text-sm">🧠 Llama 3.2 3B (Cerdas)</div>
+                            <div class="text-[10px] text-gray-500 mt-0.5">Standar Emas • ~1.8 GB</div>
                         </div>
-                        <div id="check-Llama-3.2" class="hidden text-indigo-400 font-bold text-xl">✓</div>
+                        <div id="check-Llama-3.2-3B" class="hidden text-indigo-400 font-bold text-xl">✓</div>
+                    </button>
+                    <button onclick="deleteSpecificModel('Llama-3.2-3B-Instruct-q4f16_1-MLC')" class="px-3 rounded-xl border border-gray-700 bg-gray-800/30 hover:bg-red-900/30 hover:border-red-500/50 text-gray-500 hover:text-red-400 transition" title="Hapus Model Ini">🗑️</button>
+                </div>
+
+                <!-- Model 3: Phi-3.5 Mini (Paling Waras) -->
+                <div class="flex gap-2">
+                    <button onclick="switchModel('Phi-3.5-mini-instruct-q4f16_1-MLC')" class="flex-1 text-left p-3.5 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 active:border-indigo-500 transition flex justify-between items-center group">
+                        <div>
+                            <div class="font-bold text-gray-200 text-sm">📚 Phi-3.5 Mini (Akurat)</div>
+                            <div class="text-[10px] text-gray-500 mt-0.5">Jarang Ngaco • ~2.0 GB</div>
+                        </div>
+                        <div id="check-Phi-3.5" class="hidden text-indigo-400 font-bold text-xl">✓</div>
+                    </button>
+                    <button onclick="deleteSpecificModel('Phi-3.5-mini-instruct-q4f16_1-MLC')" class="px-3 rounded-xl border border-gray-700 bg-gray-800/30 hover:bg-red-900/30 hover:border-red-500/50 text-gray-500 hover:text-red-400 transition" title="Hapus Model Ini">🗑️</button>
+                </div>
+
+                <!-- Model 4: Llama 3.2 1B (Versi Ringan) -->
+                <div class="flex gap-2">
+                    <button onclick="switchModel('Llama-3.2-1B-Instruct-q4f16_1-MLC')" class="flex-1 text-left p-3.5 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 active:border-indigo-500 transition flex justify-between items-center group">
+                        <div>
+                            <div class="font-bold text-gray-200 text-sm">⚡ Llama 3.2 1B (Cepat)</div>
+                            <div class="text-[10px] text-gray-500 mt-0.5">Ringan & Stabil • ~850 MB</div>
+                        </div>
+                        <div id="check-Llama-3.2-1B" class="hidden text-indigo-400 font-bold text-xl">✓</div>
                     </button>
                     <button onclick="deleteSpecificModel('Llama-3.2-1B-Instruct-q4f16_1-MLC')" class="px-3 rounded-xl border border-gray-700 bg-gray-800/30 hover:bg-red-900/30 hover:border-red-500/50 text-gray-500 hover:text-red-400 transition" title="Hapus Model Ini">🗑️</button>
                 </div>
 
-                <!-- Model 3: Gemma 2B -->
+                <!-- Model 5: Gemma 2 2B (Google) -->
                 <div class="flex gap-2">
-                    <button onclick="switchModel('gemma-2b-it-q4f16_1-MLC')" class="flex-1 text-left p-3.5 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 active:border-indigo-500 transition flex justify-between items-center group">
+                    <button onclick="switchModel('gemma-2-2b-it-q4f16_1-MLC')" class="flex-1 text-left p-3.5 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 active:border-indigo-500 transition flex justify-between items-center group">
                         <div>
-                            <div class="font-bold text-gray-200 text-sm">💎 Gemma 2B</div>
-                            <div class="text-[10px] text-gray-500 mt-0.5">Paling Pintar • 1.4 GB</div>
+                            <div class="font-bold text-gray-200 text-sm">💎 Gemma 2 2B (Google)</div>
+                            <div class="text-[10px] text-gray-500 mt-0.5">Seimbang & Cepat • ~1.4 GB</div>
                         </div>
-                        <div id="check-gemma" class="hidden text-indigo-400 font-bold text-xl">✓</div>
+                        <div id="check-gemma-2-2b" class="hidden text-indigo-400 font-bold text-xl">✓</div>
                     </button>
-                    <button onclick="deleteSpecificModel('gemma-2b-it-q4f16_1-MLC')" class="px-3 rounded-xl border border-gray-700 bg-gray-800/30 hover:bg-red-900/30 hover:border-red-500/50 text-gray-500 hover:text-red-400 transition" title="Hapus Model Ini">🗑️</button>
+                    <button onclick="deleteSpecificModel('gemma-2-2b-it-q4f16_1-MLC')" class="px-3 rounded-xl border border-gray-700 bg-gray-800/30 hover:bg-red-900/30 hover:border-red-500/50 text-gray-500 hover:text-red-400 transition" title="Hapus Model Ini">🗑️</button>
                 </div>
             </div>
 
@@ -271,8 +295,8 @@
 
             // FIX: Peringatan Memori untuk iPhone/iOS
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            if (isIOS && (modelId.includes("Llama-3.2") || modelId.includes("gemma"))) {
-                const proceed = confirm("⚠️ Peringatan Memori iPhone:\n\nModel ini (Qwen/Gemma) membutuhkan RAM besar. Di iPhone, aplikasi sering keluar sendiri (Crash) karena batas memori Apple.\n\nSangat disarankan menggunakan 'TinyLlama' agar lancar.\n\nTetap ingin mencoba?");
+            if (isIOS && (modelId.includes("3B") || modelId.includes("Phi") || modelId.includes("gemma"))) {
+                const proceed = confirm("⚠️ Peringatan Memori iPhone:\n\nModel ini (3B/Phi/Gemma) membutuhkan RAM besar (~1.5GB+). Jika iPhone Anda model lama (RAM < 6GB), aplikasi mungkin akan keluar sendiri (Crash).\n\nDisarankan menggunakan 'Llama 3.2 1B' atau 'Qwen 2.5 1.5B' jika mengalami crash.\n\nTetap ingin mencoba?");
                 if (!proceed) {
                     toggleSidebar();
                     return;
@@ -390,15 +414,32 @@
             if(engine) engine.resetChat();
             messages = []; // FIX: Hapus histori pesan secara eksplisit
             document.getElementById("reset-suggestion")?.classList.add("hidden"); // Sembunyikan lagi pengingat
-            document.getElementById("chat-box").innerHTML = ''; // Clear chat
-            document.getElementById("empty-state").classList.remove("hidden"); // Show welcome again
+            
+            // FIX: Restore HTML structure lengkap (Empty State + Anchor) agar tidak error scrollIntoView
+            const box = document.getElementById("chat-box");
+            box.innerHTML = `
+            <div id="empty-state" class="flex flex-col items-center justify-center h-full min-h-[50vh] text-center px-6 animate-fade-in">
+                <div class="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-xl shadow-indigo-500/20">
+                    <svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2 tracking-tight">Wayan AI</h2>
+                <p class="text-gray-400 text-sm max-w-xs mb-8 leading-relaxed">Asisten AI pribadi yang berjalan offline di browser Anda. Pilih model di menu untuk memulai.</p>
+                
+                <div class="grid grid-cols-1 gap-3 w-full max-w-sm">
+                    <button onclick="fillInput('Buatkan puisi pendek tentang hujan')" class="p-3.5 bg-gray-800/40 hover:bg-gray-800 border border-gray-700/50 hover:border-gray-600 rounded-xl text-sm text-gray-300 transition text-left flex items-center gap-3 group"><span class="text-lg group-hover:scale-110 transition">📝</span> Buatkan puisi tentang hujan</button>
+                    <button onclick="fillInput('Jelaskan apa itu HTML dalam bahasa sederhana')" class="p-3.5 bg-gray-800/40 hover:bg-gray-800 border border-gray-700/50 hover:border-gray-600 rounded-xl text-sm text-gray-300 transition text-left flex items-center gap-3 group"><span class="text-lg group-hover:scale-110 transition">💻</span> Jelaskan apa itu HTML</button>
+                </div>
+            </div>
+            <div id="chat-anchor"></div>
+            `;
+            
             if(document.getElementById("sidebar").classList.contains("sidebar-open")) toggleSidebar();
         }
 
         // --- 3. CHAT LOGIC ---
 
         let messages = [];
-        const defaultSystemPrompt = "Kamu adalah asisten AI faktual. Jawab hanya berdasarkan fakta. Jangan mengarang atau berhalusinasi. Jika tidak tahu, katakan 'Saya tidak tahu'. Gunakan Bahasa Indonesia.";
+        const defaultSystemPrompt = "Anda adalah asisten AI yang jujur, faktual, dan cerdas. Gunakan Bahasa Indonesia yang baku namun luwes. Jawablah dengan ringkas dan langsung ke inti permasalahan. Jika informasi yang diberikan pengguna tidak cukup atau Anda tidak tahu faktanya, katakan dengan sopan bahwa Anda tidak tahu. Jangan mengarang informasi. Jangan mengulang-ulang jawaban. Fokus pada akurasi.";
 
         window.sendMessage = async function() {
             const input = document.getElementById("user-input");
@@ -451,9 +492,9 @@
                     messages: messagesToSend, // Gunakan history yang sudah dipangkas
                     stream: true, // AKTIFKAN STREAMING
                     // Tuning Parameter untuk mengurangi halusinasi (jawaban ngaco)
-                    temperature: 0.3,       // Dibuat sangat rendah agar AI fokus pada fakta, tidak kreatif.
-                    top_p: 0.9,             // Standar.
-                    frequency_penalty: 0.5  // Mencegah AI mengulang kata yang sama.
+                    temperature: 0.3,       // Sedikit dinaikkan agar bahasanya lebih luwes
+                    top_p: 0.95,            // Standar.
+                    frequency_penalty: 0.1  // DITURUNKAN: Jangan terlalu keras menghukum pengulangan kata pada model kecil
                 });
 
                 let fullText = "";
@@ -471,8 +512,9 @@
                     if (delta) {
                         fullText += delta;
                         contentWrapper.innerHTML = marked.parse(fullText); // Update tampilan dengan markdown
-                        // FIX: Gunakan anchor untuk scroll yang lebih andal
-                        document.getElementById('chat-anchor').scrollIntoView();
+                        // FIX: Safe scroll (Cek apakah anchor ada sebelum scroll)
+                        const anchor = document.getElementById('chat-anchor');
+                        if(anchor) anchor.scrollIntoView({ behavior: "smooth", block: "end" });
                     }
                 }
                 
@@ -521,9 +563,19 @@
                    </div>`;
             
             box.appendChild(div);
-            // FIX: Gunakan anchor untuk scroll yang lebih andal
+            
+            // FIX: Pastikan anchor selalu ada dan di posisi paling bawah
+            let anchor = document.getElementById('chat-anchor');
+            if (!anchor) {
+                anchor = document.createElement('div');
+                anchor.id = 'chat-anchor';
+                box.appendChild(anchor);
+            } else {
+                box.appendChild(anchor); // Pindahkan ke bawah
+            }
+
             setTimeout(() => {
-                document.getElementById('chat-anchor').scrollIntoView({ behavior: "smooth", block: "end" });
+                anchor.scrollIntoView({ behavior: "smooth", block: "end" });
             }, 100);
         }
 
@@ -548,8 +600,19 @@
                 </div>
             `;
             box.appendChild(div);
+            
+            // FIX: Pastikan anchor selalu ada
+            let anchor = document.getElementById('chat-anchor');
+            if (!anchor) {
+                anchor = document.createElement('div');
+                anchor.id = 'chat-anchor';
+                box.appendChild(anchor);
+            } else {
+                box.appendChild(anchor);
+            }
+
             setTimeout(() => {
-                document.getElementById('chat-anchor').scrollIntoView({ behavior: "smooth", block: "end" });
+                anchor.scrollIntoView({ behavior: "smooth", block: "end" });
             }, 100);
             return id;
         }
@@ -570,17 +633,21 @@
         }
 
         function formatModelName(raw) {
-            if(raw.includes("0.5B")) return "Qwen2 0.5B";
-            if(raw.includes("Llama-3.2")) return "Llama 3.2 1B";
-            if(raw.includes("gemma")) return "Gemma 2B";
+            if(raw.includes("Qwen2.5-1.5B")) return "Qwen 2.5 1.5B";
+            if(raw.includes("Llama-3.2-3B")) return "Llama 3.2 3B";
+            if(raw.includes("Phi-3.5")) return "Phi-3.5 Mini";
+            if(raw.includes("Llama-3.2-1B")) return "Llama 3.2 1B";
+            if(raw.includes("gemma-2-2b")) return "Gemma 2 2B";
             return "AI Model";
         }
 
         function updateMenuCheck(activeId) {
             document.querySelectorAll("[id^='check-']").forEach(el => el.classList.add("hidden"));
-            if(activeId.includes("0.5B")) document.getElementById("check-Qwen2-0.5B").classList.remove("hidden");
-            if(activeId.includes("Llama-3.2")) document.getElementById("check-Llama-3.2").classList.remove("hidden");
-            if(activeId.includes("gemma")) document.getElementById("check-gemma").classList.remove("hidden");
+            if(activeId.includes("Qwen2.5-1.5B")) document.getElementById("check-Qwen2.5-1.5B").classList.remove("hidden");
+            if(activeId.includes("Llama-3.2-3B")) document.getElementById("check-Llama-3.2-3B").classList.remove("hidden");
+            if(activeId.includes("Phi-3.5")) document.getElementById("check-Phi-3.5").classList.remove("hidden");
+            if(activeId.includes("Llama-3.2-1B")) document.getElementById("check-Llama-3.2-1B").classList.remove("hidden");
+            if(activeId.includes("gemma-2-2b")) document.getElementById("check-gemma-2-2b").classList.remove("hidden");
         }
 
         // Fungsi untuk menyimpan System Prompt
