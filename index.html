@@ -60,6 +60,11 @@
                 Percakapan Baru
             </button>
 
+            <!-- FIX: Pengingat untuk reset chat jika percakapan sudah terlalu panjang -->
+            <div id="reset-suggestion" class="hidden text-center text-[10px] text-gray-500 bg-gray-800/30 p-2 rounded-lg border border-gray-700/50 -mt-4 mx-2 animate-fade-in">
+                Percakapan terasa lambat? Mulai <b class="text-indigo-400">Percakapan Baru</b> untuk menyegarkan memori AI.
+            </div>
+
             <!-- Memory Monitor (New Feature) -->
             <div id="memory-card" class="hidden p-3.5 bg-gray-800/50 rounded-xl border border-gray-700/50">
                 <div class="flex justify-between items-center mb-2">
@@ -100,7 +105,15 @@
                 </button>
             </div>
 
-            <!-- Memory Actions -->
+            <!-- System Prompt -->
+            <div class="space-y-3 pt-6 border-t border-gray-800">
+                <label for="system-prompt-input" class="text-xs text-gray-500 uppercase font-bold tracking-wider ml-1">Atur Perilaku AI (System Prompt)</label>
+                <textarea id="system-prompt-input" oninput="saveSystemPrompt(this.value)" rows="4" class="w-full bg-gray-800/50 text-xs text-gray-300 border border-gray-700 rounded-xl p-3 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none no-scrollbar" placeholder="Contoh: Kamu adalah asisten yang selalu menjawab dengan singkat dan padat."></textarea>
+                <p class="text-[10px] text-gray-500 ml-1">Instruksi ini akan memandu gaya jawaban AI di setiap percakapan baru.</p>
+            </div>
+
+
+            <!-- Memory Actions (dipindah ke bawah) -->
             <div class="pt-6 border-t border-gray-800">
                  <button onclick="deleteModel()" class="w-full text-left text-red-400 text-xs hover:text-red-300 py-3 px-2 rounded hover:bg-red-500/10 transition flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -176,17 +189,21 @@
 
     <!-- INPUT AREA -->
     <footer class="fixed bottom-0 w-full glass p-3 z-30 pb-safe">
-        <div class="max-w-3xl mx-auto flex gap-2 items-end">
+        <div class="max-w-3xl mx-auto flex gap-3 items-end">
             <textarea id="user-input" rows="1" disabled 
                 class="flex-1 bg-gray-800 text-white border border-gray-700 rounded-2xl px-4 py-3.5 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm resize-none max-h-32 disabled:opacity-50 placeholder-gray-500" 
                 placeholder="Siapkan model dulu..." 
                 oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" 
                 onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
-                
-            <button onclick="sendMessage()" id="btn-send" disabled 
-                class="p-3.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 rounded-full text-white shadow-lg disabled:opacity-50 disabled:bg-gray-700 transition flex-shrink-0">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"></path></svg>
-            </button>
+            
+            <div class="flex-shrink-0">
+                <button onclick="sendMessage()" id="btn-send" disabled class="p-3.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 rounded-full text-white shadow-lg disabled:opacity-50 disabled:bg-gray-700 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"></path></svg>
+                </button>
+                <button onclick="stopGeneration()" id="btn-stop" class="hidden p-3.5 bg-red-600 hover:bg-red-500 active:scale-95 rounded-full text-white shadow-lg transition">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"></path></svg>
+                </button>
+            </div>
         </div>
     </footer>
 
@@ -217,6 +234,12 @@
                 // Pengguna Baru
                 toggleSidebar();
             }
+
+            // Muat System Prompt yang tersimpan
+            const savedPrompt = localStorage.getItem("wayan_system_prompt");
+            if (savedPrompt) document.getElementById("system-prompt-input").value = savedPrompt;
+
+            requestPersistentStorage(); // Minta penyimpanan permanen
             initMemoryMonitor(); // Jalankan monitor memori
         };
 
@@ -257,7 +280,15 @@
                     modelId,
                     { 
                         initProgressCallback: (info) => {
-                            document.getElementById("dl-status").innerText = info.text;
+                            // Terjemahkan status agar pengguna tidak panik dikira download ulang
+                            let statusText = info.text;
+                            if (statusText.includes("Fetching")) {
+                                statusText = "Mengunduh data baru (Butuh Internet)...";
+                            } else if (statusText.includes("Loading")) {
+                                statusText = "Memuat dari penyimpanan HP (Offline)...";
+                            }
+                            document.getElementById("dl-status").innerText = statusText;
+                            
                             if(info.progress) {
                                 const p = Math.round(info.progress * 100);
                                 document.getElementById("dl-bar").style.width = p + "%";
@@ -326,6 +357,8 @@
 
         window.resetChat = function() {
             if(engine) engine.resetChat();
+            messages = []; // FIX: Hapus histori pesan secara eksplisit
+            document.getElementById("reset-suggestion")?.classList.add("hidden'); // Sembunyikan lagi pengingat
             document.getElementById("chat-box").innerHTML = ''; // Clear chat
             document.getElementById("empty-state").classList.remove("hidden"); // Show welcome again
             if(document.getElementById("sidebar").classList.contains("sidebar-open")) toggleSidebar();
@@ -334,30 +367,80 @@
         // --- 3. CHAT LOGIC ---
 
         let messages = [];
+        const defaultSystemPrompt = "Anda adalah asisten AI yang membantu, akurat, dan tidak mengarang jawaban. Jika tidak tahu, katakan tidak tahu.";
 
         window.sendMessage = async function() {
             const input = document.getElementById("user-input");
+            const btnSend = document.getElementById("btn-send");
+            const btnStop = document.getElementById("btn-stop");
+
             const text = input.value.trim();
             if(!text || !engine) return;
 
             addBubble(text, true);
             input.value = "";
             input.style.height = 'auto';
+            input.disabled = true;
+
+            // Ganti tombol Kirim dengan tombol Stop
+            btnSend.classList.add("hidden");
+            btnStop.classList.remove("hidden");
+
 
             const loadingId = addLoading();
+
+            // Jika ini pesan pertama, tambahkan System Prompt
+            if (messages.length === 0) {
+                const userSystemPrompt = document.getElementById("system-prompt-input").value.trim();
+                messages.push({ role: "system", content: userSystemPrompt || defaultSystemPrompt });
+            }
             messages.push({ role: "user", content: text });
 
+            // Tampilkan pengingat jika chat sudah panjang (lebih dari 7 pasang pesan)
+            const suggestion = document.getElementById("reset-suggestion");
+            if (messages.length > 15 && suggestion.classList.contains("hidden")) {
+                suggestion.classList.remove("hidden");
+            }
+
+
             try {
-                const reply = await engine.chat.completions.create({ messages });
-                const aiText = reply.choices[0].message.content;
+                const stream = await engine.chat.completions.create({ 
+                    messages,
+                    stream: true // AKTIFKAN STREAMING
+                });
+
+                let fullText = "";
+                let isFirstChunk = true;
+                const loadingBubble = document.getElementById(loadingId);
+                const contentWrapper = loadingBubble.querySelector(".bubble-content-wrapper");
+
+                for await (const chunk of stream) {
+                    if (isFirstChunk) {
+                        contentWrapper.innerHTML = ""; // Hapus animasi loading
+                        contentWrapper.classList.add("prose", "prose-invert", "text-sm", "leading-relaxed", "break-words", "select-text");
+                        isFirstChunk = false;
+                    }
+                    const delta = chunk.choices[0].delta.content;
+                    if (delta) {
+                        fullText += delta;
+                        contentWrapper.innerHTML = marked.parse(fullText); // Update tampilan dengan markdown
+                        const box = document.getElementById("chat-box");
+                        box.scrollTop = box.scrollHeight; // Selalu scroll ke bawah
+                    }
+                }
                 
-                document.getElementById(loadingId).remove();
-                addBubble(aiText, false);
-                messages.push({ role: "assistant", content: aiText });
+                messages.push({ role: "assistant", content: fullText });
 
             } catch (err) {
-                document.getElementById(loadingId).remove();
-                addBubble("⚠️ Error: Koneksi putus atau RAM penuh. Coba Reset Chat.", false);
+                document.getElementById(loadingId)?.remove(); // Hapus bubble loading jika masih ada
+                addBubble("⚠️ Error: Proses dihentikan atau RAM penuh. Coba lagi.", false);
+                console.error("Chat error:", err);
+            } finally {
+                // Kembalikan UI ke kondisi normal
+                input.disabled = false;
+                btnSend.classList.remove("hidden");
+                btnStop.classList.add("hidden");
+                input.focus();
             }
         }
 
@@ -408,16 +491,23 @@
             const aiAvatar = `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-600 flex items-center justify-center flex-shrink-0 mr-2 shadow-lg border border-emerald-400/30"><svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>`;
 
             div.innerHTML = `
-                <div class="flex items-end max-w-[85%]">
+                <div class="flex items-end max-w-[88%] justify-start">
                     ${aiAvatar}
-                    <div class="bg-gray-800 px-5 py-4 rounded-2xl rounded-tl-none border border-gray-700 shadow-md">
-                        <div class="dot-pulse ml-2"></div>
+                    <div class="bubble-content-wrapper px-5 py-3.5 bg-gray-800 text-gray-100 rounded-2xl rounded-tl-none border border-gray-700 shadow-md">
+                        <div class="dot-pulse ml-2 my-1"></div>
                     </div>
                 </div>
             `;
             box.appendChild(div);
             setTimeout(() => { box.scrollTop = box.scrollHeight; }, 100);
             return id;
+        }
+
+        // Fungsi untuk menghentikan AI
+        window.stopGeneration = function() {
+            if (engine) {
+                engine.interruptGenerate();
+            }
         }
 
         window.fillInput = function(text) {
@@ -440,6 +530,11 @@
             if(activeId.includes("Tiny")) document.getElementById("check-TinyLlama").classList.remove("hidden");
             if(activeId.includes("Qwen")) document.getElementById("check-Qwen2").classList.remove("hidden");
             if(activeId.includes("gemma")) document.getElementById("check-gemma").classList.remove("hidden");
+        }
+
+        // Fungsi untuk menyimpan System Prompt
+        window.saveSystemPrompt = function(prompt) {
+            localStorage.setItem("wayan_system_prompt", prompt);
         }
 
         // --- 5. MEMORY MONITOR ---
@@ -470,6 +565,21 @@
                         bar.classList.remove("bg-red-500");
                     }
                 }, 2000); // Update setiap 2 detik
+            }
+        }
+
+        // --- 6. PERSISTENT STORAGE ---
+        async function requestPersistentStorage() {
+            if (navigator.storage && navigator.storage.persist) {
+                const isPersisted = await navigator.storage.persisted();
+                console.log(`Penyimpanan permanen: ${isPersisted ? 'Aktif' : 'Tidak Aktif'}`);
+                if (!isPersisted) {
+                    const result = await navigator.storage.persist();
+                    console.log(`Meminta penyimpanan permanen: ${result ? 'Berhasil' : 'Gagal'}`);
+                    if(result) {
+                        alert("Penyimpanan permanen diaktifkan. Model AI Anda sekarang lebih aman dari pembersihan otomatis oleh browser.");
+                    }
+                }
             }
         }
 
