@@ -247,6 +247,16 @@
             // UI Handling
             document.getElementById("resume-screen").classList.add("hidden");
             if(document.getElementById("sidebar").classList.contains("sidebar-open")) toggleSidebar();
+
+            // FIX: Peringatan Memori untuk iPhone/iOS
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS && (modelId.includes("Qwen") || modelId.includes("gemma"))) {
+                const proceed = confirm("⚠️ Peringatan Memori iPhone:\n\nModel ini (Qwen/Gemma) membutuhkan RAM besar. Di iPhone, aplikasi sering keluar sendiri (Crash) karena batas memori Apple.\n\nSangat disarankan menggunakan 'TinyLlama' agar lancar.\n\nTetap ingin mencoba?");
+                if (!proceed) {
+                    toggleSidebar();
+                    return;
+                }
+            }
             
             const progressBox = document.getElementById("download-progress");
             const statusLabel = document.getElementById("current-model-label");
@@ -367,7 +377,7 @@
         // --- 3. CHAT LOGIC ---
 
         let messages = [];
-        const defaultSystemPrompt = "Anda adalah asisten AI yang membantu, akurat, dan tidak mengarang jawaban. Jika tidak tahu, katakan tidak tahu.";
+        const defaultSystemPrompt = "Kamu adalah asisten AI yang cerdas. Jawab pertanyaan dengan singkat, padat, dan jelas.";
 
         window.sendMessage = async function() {
             const input = document.getElementById("user-input");
@@ -402,11 +412,26 @@
                 suggestion.classList.remove("hidden");
             }
 
+            // OPTIMASI MEMORI HP: Sliding Window Context
+            // Hanya kirim System Prompt + 10 pesan terakhir agar RAM tidak jebol saat chat panjang
+            let messagesToSend = messages;
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile && messages.length > 10) {
+                if (messages[0].role === "system") {
+                    // Keep System Prompt + Last 9 messages
+                    messagesToSend = [messages[0], ...messages.slice(-9)];
+                } else {
+                    messagesToSend = messages.slice(-10);
+                }
+            }
 
             try {
                 const stream = await engine.chat.completions.create({ 
-                    messages,
-                    stream: true // AKTIFKAN STREAMING
+                    messages: messagesToSend, // Gunakan history yang sudah dipangkas
+                    stream: true, // AKTIFKAN STREAMING
+                    temperature: 0.5, // Kurangi kreativitas agar lebih akurat (0.0 - 1.0)
+                    top_p: 0.9,       // Filter kata-kata yang kurang relevan
+                    frequency_penalty: 0.6 // Cegah pengulangan kata (seperti "sekarang... sekarang")
                 });
 
                 let fullText = "";
