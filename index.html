@@ -6,10 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
     <title>Wayan AI</title>
     <link rel="manifest" href="manifest.json">
+    <!-- OPTIMASI: Preconnect ke CDN agar koneksi lebih 'Sat Set' -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <!-- Library untuk format teks Markdown (Bold, Code, List) -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
     <style>
         body { font-family: 'Outfit', sans-serif; background-color: #111827; color: #F3F4F6; overscroll-behavior-y: none; /* Mencegah pull-to-refresh di HP */ }
         
@@ -313,6 +317,30 @@
             initMemoryMonitor(); // Jalankan monitor memori
         };
 
+        // OPTIMASI IPHONE: Unload model saat tab di background untuk hemat RAM
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'hidden') {
+                if (engine) {
+                    console.log("Tab disembunyikan, unload engine untuk hemat memori.");
+                    await engine.unload();
+                    engine = null;
+                    
+                    // Update UI untuk menunjukkan model tidak aktif (mode tidur)
+                    document.getElementById("status-dot").classList.replace("bg-green-500", "bg-red-500");
+                    document.getElementById("status-dot").classList.remove("shadow-[0_0_8px_limegreen]");
+                    document.getElementById("current-model-label").innerText = "Dijeda (hemat memori)";
+                    document.getElementById("user-input").disabled = true;
+                    document.getElementById("user-input").placeholder = "Buka kembali untuk melanjutkan...";
+                    document.getElementById("btn-send").disabled = true;
+                }
+            } else if (document.visibilityState === 'visible') {
+                if (!engine && lastUsedModel) {
+                    // Jika pengguna kembali dan engine sudah di-unload, tampilkan layar resume
+                    document.getElementById("resume-screen").classList.remove("hidden");
+                }
+            }
+        });
+
         window.initEngine = async function(modelId) {
             // UI Handling
             document.getElementById("resume-screen").classList.add("hidden");
@@ -430,7 +458,7 @@
                 return;
             }
             if(confirm("Ganti ke model " + formatModelName(modelId) + "? Chat saat ini akan hilang.")) {
-                document.getElementById("chat-box").innerHTML = ""; 
+                resetChat(); 
                 initEngine(modelId);
             }
         }
@@ -458,7 +486,7 @@
         // --- 3. CHAT LOGIC ---
 
         let messages = [];
-        const defaultSystemPrompt = "Anda adalah asisten AI yang jujur, faktual, dan cerdas. Gunakan Bahasa Indonesia yang baku namun luwes. Jawablah dengan ringkas dan langsung ke inti permasalahan. Jika informasi yang diberikan pengguna tidak cukup atau Anda tidak tahu faktanya, katakan dengan sopan bahwa Anda tidak tahu. Jangan mengarang informasi. Jangan mengulang-ulang jawaban. Fokus pada akurasi.";
+        const defaultSystemPrompt = "Anda adalah asisten AI ahli dengan tugas utama memberikan jawaban yang akurat dan faktual. Gunakan Bahasa Indonesia yang alami, jelas, dan terstruktur. Jika Anda tidak tahu jawabannya, katakan dengan jujur 'Saya tidak tahu'. Jangan pernah mengarang informasi. Prioritaskan kebenaran di atas segalanya.";
 
         window.sendMessage = async function() {
             const input = document.getElementById("user-input");
@@ -494,15 +522,32 @@
             }
 
             // OPTIMASI MEMORI HP: Sliding Window Context
-            // Hanya kirim System Prompt + 10 pesan terakhir agar RAM tidak jebol saat chat panjang
+            // Hanya kirim System Prompt + sedikit pesan terakhir agar RAM tidak jebol
             let messagesToSend = messages;
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            if (isMobile && messages.length > 10) {
+            
+            // Batas pesan: Desktop 20, HP 6 (3 pasang tanya-jawab)
+            // Mengurangi batas di HP dari 10 ke 6 sangat ampuh mencegah crash
+            const historyLimit = isMobile ? 6 : 20; 
+
+            if (messages.length > historyLimit) {
                 if (messages[0].role === "system") {
-                    // Keep System Prompt + Last 9 messages
-                    messagesToSend = [messages[0], ...messages.slice(-9)];
+                    // Keep System Prompt + Last N messages
+                    messagesToSend = [messages[0], ...messages.slice(-(historyLimit - 1))];
                 } else {
-                    messagesToSend = messages.slice(-10);
+                    messagesToSend = messages.slice(-historyLimit);
+                }
+            }
+
+            // Cek Memori Darurat (Khusus Browser yang mendukung API memory seperti Chrome Android)
+            if (performance && performance.memory) {
+                const mem = performance.memory;
+                // Jika RAM terpakai > 90% dari batas, paksa reset engine internal chat history (bukan UI)
+                if (mem.usedJSHeapSize > mem.jsHeapSizeLimit * 0.9) {
+                    console.warn("Memori kritis! Memangkas history...");
+                    // Kita tidak reset UI, tapi kita pastikan hanya mengirim pesan terakhir
+                    // Engine WebLLM mungkin masih menyimpan cache, ini usaha terakhir
+                    messagesToSend = [messages[0], messages[messages.length-1]]; 
                 }
             }
 
@@ -520,6 +565,10 @@
                 let isFirstChunk = true;
                 const loadingBubble = document.getElementById(loadingId);
                 const contentWrapper = loadingBubble.querySelector(".bubble-content-wrapper");
+                const box = document.getElementById("chat-box");
+
+                // OPTIMASI RENDERING: Throttle update UI agar HP tidak panas/lag
+                let lastRenderTime = 0;
 
                 for await (const chunk of stream) {
                     if (isFirstChunk) {
@@ -530,15 +579,32 @@
                     const delta = chunk.choices[0].delta.content;
                     if (delta) {
                         fullText += delta;
-                        contentWrapper.innerHTML = marked.parse(fullText); // Update tampilan dengan markdown
-                        enhanceCodeBlocks(contentWrapper); // Tambahkan tombol copy
-                        // FIX: Safe scroll (Cek apakah anchor ada sebelum scroll)
-                        const anchor = document.getElementById('chat-anchor');
-                        if(anchor) anchor.scrollIntoView({ behavior: "smooth", block: "end" });
+                        
+                        // Cek apakah user sedang di posisi paling bawah (toleransi 150px)
+                        // Jika user sedang baca chat lama (scroll ke atas), JANGAN paksa turun.
+                        const isUserAtBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 150;
+
+                        // Update UI maksimal setiap 50ms (20fps) agar ringan
+                        const now = Date.now();
+                        if (now - lastRenderTime > 50) {
+                            contentWrapper.innerHTML = marked.parse(fullText); 
+                            enhanceCodeBlocks(contentWrapper);
+                            lastRenderTime = now;
+
+                            // Hanya auto-scroll jika user memang di bawah
+                            const anchor = document.getElementById('chat-anchor');
+                            if(anchor && isUserAtBottom) anchor.scrollIntoView({ behavior: "smooth", block: "end" });
+                        }
                     }
                 }
                 
                 messages.push({ role: "assistant", content: fullText });
+                
+                // Render final untuk memastikan teks lengkap
+                contentWrapper.innerHTML = marked.parse(fullText);
+                enhanceCodeBlocks(contentWrapper);
+                const anchor = document.getElementById('chat-anchor');
+                if(anchor) anchor.scrollIntoView({ behavior: "smooth", block: "end" });
 
             } catch (err) {
                 document.getElementById(loadingId)?.remove(); // Hapus bubble loading jika masih ada
