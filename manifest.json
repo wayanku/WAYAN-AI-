@@ -1,11 +1,10 @@
 {
-    "name": "Wayan AI Assistant",
+    "name": "Wayan AI Pro",
     "short_name": "WayanAI",
     "start_url": "./index.html",
     "display": "standalone",
-    "background_color": "#0f172a",
-    "theme_color": "#0f172a",
-    "orientation": "portrait-primary",
+    "background_color": "#0B0F19",
+    "theme_color": "#0B0F19",
     "icons": [
         {
             "src": "https://cdn-icons-png.flaticon.com/512/12222/12222560.png",
