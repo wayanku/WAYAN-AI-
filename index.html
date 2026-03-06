@@ -70,6 +70,50 @@
         .copy-code-btn:active {
             background-color: #4b5563;
         }
+        .copy-code-btn.copied {
+            background-color: #10B981; /* emerald-500 */
+            border-color: #059669; /* emerald-600 */
+            color: white;
+        }
+
+        /* Tombol Suara (Text-to-Speech) */
+        .speak-btn {
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0,0,0,0.25);
+            color: #9ca3af;
+            border-radius: 9999px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s, background-color 0.2s;
+        }
+        .prose:hover .speak-btn {
+            opacity: 1;
+        }
+        .speak-btn:hover {
+            background-color: rgba(0,0,0,0.5);
+            color: #e5e7eb;
+        }
+        .speak-btn.speaking svg {
+            color: #34d399; /* emerald-400 */
+        }
+
+        /* Tombol Microphone (Speech-to-Text) */
+        .mic-btn.listening svg {
+            color: #ef4444; /* red-500 */
+            animation: pulse-mic 1.2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+        }
+        @keyframes pulse-mic {
+            50% {
+                transform: scale(1.2);
+            }
+        }
 
         /* OPTIMASI: Isolasi render bubble chat */
         .chat-bubble-container {
@@ -260,6 +304,10 @@
     <!-- INPUT AREA -->
     <footer class="fixed bottom-0 w-full glass p-3 z-30 pb-safe">
         <div class="max-w-3xl mx-auto flex gap-3 items-end">
+            <button id="btn-mic" onclick="startVoiceRecognition()" disabled title="Input Suara (Bukan Telepon)" class="p-3.5 text-gray-400 hover:text-white transition mic-btn disabled:opacity-50 flex-shrink-0">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z"></path><path fill-rule="evenodd" d="M5.5 8.5A.5.5 0 016 9v1a4 4 0 004 4h.01a4 4 0 004-4V9a.5.5 0 011 0v1a5 5 0 01-4.5 4.975V17h1.5a.5.5 0 010 1h-5a.5.5 0 010-1H10v-2.025A5 5 0 015.5 10V9a.5.5 0 01.5-.5z" clip-rule="evenodd"></path></svg>
+            </button>
+
             <textarea id="user-input" rows="1" disabled 
                 class="flex-1 bg-gray-800 text-white border border-gray-700 rounded-2xl px-4 py-3.5 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm resize-none max-h-32 disabled:opacity-50 placeholder-gray-500" 
                 placeholder="Siapkan model dulu..." 
@@ -283,6 +331,9 @@
 
         let engine = null;
         let lastUsedModel = localStorage.getItem("wayan_model_id");
+        let recognition = null;
+        let isListening = false; // State untuk speech recognition
+        let finalTranscript = ''; // Untuk mengakumulasi hasil transkrip final
 
         // --- 1. INITIALIZATION ---
         
@@ -320,6 +371,9 @@
                 localStorage.setItem("wayan_system_prompt", e.target.value);
             }, 400));
 
+            // Siapkan fitur Speech-to-Text
+            setupSpeechRecognition();
+
             requestPersistentStorage(); // Minta penyimpanan permanen
             initMemoryMonitor(); // Jalankan monitor memori
         };
@@ -339,6 +393,7 @@
                     document.getElementById("user-input").disabled = true;
                     document.getElementById("user-input").placeholder = "Buka kembali untuk melanjutkan...";
                     document.getElementById("btn-send").disabled = true;
+                    document.getElementById("btn-mic").disabled = true;
                 }
             } else if (document.visibilityState === 'visible') {
                 if (!engine && lastUsedModel) {
@@ -367,6 +422,7 @@
             const statusLabel = document.getElementById("current-model-label");
             const inputField = document.getElementById("user-input");
             const btnSend = document.getElementById("btn-send");
+            const btnMic = document.getElementById("btn-mic");
 
             // Memori Cleanup (PENTING UNTUK IPHONE)
             if (engine) {
@@ -380,6 +436,7 @@
             progressBox.classList.remove("hidden");
             inputField.disabled = true;
             inputField.placeholder = "Sedang memuat otak AI...";
+            btnMic.disabled = true;
 
             try {
                 // Simpan pilihan
@@ -419,6 +476,7 @@
                 inputField.disabled = false;
                 inputField.placeholder = "Ketik pesan...";
                 btnSend.disabled = false;
+                btnMic.disabled = false;
                 
                 // Animasi pesan pembuka
                 setTimeout(() => {
@@ -468,6 +526,7 @@
         }
 
         window.resetChat = function() {
+            if(speechSynthesis.speaking) speechSynthesis.cancel();
             if(engine) engine.resetChat();
             messages = []; // FIX: Hapus histori pesan secara eksplisit
             document.getElementById("reset-suggestion")?.classList.add("hidden"); // Sembunyikan pengingat
@@ -493,6 +552,7 @@
         const defaultSystemPrompt = "Anda adalah asisten AI ahli dengan tugas utama memberikan jawaban yang akurat dan faktual. Gunakan Bahasa Indonesia yang alami, jelas, dan terstruktur. Jika Anda tidak tahu jawabannya, katakan dengan jujur 'Saya tidak tahu'. Jangan pernah mengarang informasi. Prioritaskan kebenaran di atas segalanya.";
 
         window.sendMessage = async function() {
+            if(speechSynthesis.speaking) speechSynthesis.cancel();
             const input = document.getElementById("user-input");
             const btnSend = document.getElementById("btn-send");
             const btnStop = document.getElementById("btn-stop");
@@ -607,6 +667,21 @@
                 // Render final untuk memastikan teks lengkap
                 contentWrapper.innerHTML = marked.parse(fullText);
                 enhanceCodeBlocks(contentWrapper);
+
+                // Tambahkan tombol suara dan otomatis bacakan jawaban AI
+                const wrapper = loadingBubble.querySelector('.relative');
+                if (wrapper) {
+                    const speakButton = document.createElement('button');
+                    speakButton.className = 'speak-btn';
+                    speakButton.title = 'Hentikan Suara';
+                    speakButton.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd"></path></svg>`;
+                    speakButton.onclick = () => speakText(speakButton, fullText);
+                    wrapper.appendChild(speakButton);
+
+                    // Otomatis bacakan jawaban AI untuk pengalaman "live"
+                    speakText(speakButton, fullText);
+                }
+
                 const anchor = document.getElementById('chat-anchor');
                 if(anchor) anchor.scrollIntoView({ behavior: "smooth", block: "end" });
 
@@ -649,7 +724,9 @@
                    </div>`
                 : `<div class="flex items-end max-w-[88%] justify-start">
                      ${aiAvatar}
-                     <div class="px-5 py-3.5 bg-sky-950 text-sky-100 rounded-2xl rounded-tl-none border border-sky-800 shadow-md prose prose-invert text-sm leading-relaxed break-words select-text">${formattedText}</div>
+                     <div class="relative">
+                        <div class="px-5 py-3.5 bg-sky-950 text-sky-100 rounded-2xl rounded-tl-none border border-sky-800 shadow-md prose prose-invert text-sm leading-relaxed break-words select-text">${formattedText}</div>
+                     </div>
                    </div>`;
             
             // Sisipkan bubble baru sebelum chat-anchor
@@ -657,6 +734,19 @@
             box.insertBefore(div, anchor);
             // Tambahkan tombol copy jika ada blok kode di pesan awal
             enhanceCodeBlocks(div);
+
+            // Tambahkan tombol suara jika ini pesan dari AI
+            if (!isUser) {
+                const wrapper = div.querySelector('.relative');
+                if (wrapper) {
+                    const speakButton = document.createElement('button');
+                    speakButton.className = 'speak-btn';
+                    speakButton.title = 'Bacakan Teks';
+                    speakButton.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd"></path></svg>`;
+                    speakButton.onclick = () => speakText(speakButton, text);
+                    wrapper.appendChild(speakButton);
+                }
+            }
             
             setTimeout(() => {
                 anchor.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -678,11 +768,13 @@
             div.innerHTML = `
                 <div class="flex items-end max-w-[88%] justify-start">
                     ${aiAvatar}
-                    <div class="bubble-content-wrapper px-5 py-3 bg-sky-950 rounded-2xl rounded-tl-none border border-sky-800 shadow-md">
-                        <div class="flex space-x-1.5 p-1">
-                            <div class="w-1.5 h-1.5 bg-sky-300 rounded-full animate-pulse-dot" style="animation-delay: 0s;"></div>
-                            <div class="w-1.5 h-1.5 bg-sky-300 rounded-full animate-pulse-dot" style="animation-delay: 0.15s;"></div>
-                            <div class="w-1.5 h-1.5 bg-sky-300 rounded-full animate-pulse-dot" style="animation-delay: 0.3s;"></div>
+                    <div class="relative">
+                        <div class="bubble-content-wrapper px-5 py-3 bg-sky-950 rounded-2xl rounded-tl-none border border-sky-800 shadow-md">
+                            <div class="flex space-x-1.5 p-1">
+                                <div class="w-1.5 h-1.5 bg-sky-300 rounded-full animate-pulse-dot" style="animation-delay: 0s;"></div>
+                                <div class="w-1.5 h-1.5 bg-sky-300 rounded-full animate-pulse-dot" style="animation-delay: 0.15s;"></div>
+                                <div class="w-1.5 h-1.5 bg-sky-300 rounded-full animate-pulse-dot" style="animation-delay: 0.3s;"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -700,9 +792,37 @@
 
         // Fungsi untuk menghentikan AI
         window.stopGeneration = function() {
+            if(speechSynthesis.speaking) speechSynthesis.cancel();
             if (engine) {
                 engine.interruptGenerate();
             }
+        }
+
+        // Fungsi Text-to-Speech
+        window.speakText = function(button, text) {
+            // Hentikan suara yang sedang berjalan
+            if (speechSynthesis.speaking) {
+                const wasSpeakingThis = button.classList.contains('speaking');
+                document.querySelectorAll('.speak-btn.speaking').forEach(btn => btn.classList.remove('speaking'));
+                speechSynthesis.cancel();
+                if (wasSpeakingThis) {
+                    return; // Jika tombol yang sama diklik, hanya hentikan suara
+                }
+            }
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'id-ID'; // Bahasa Indonesia
+            utterance.rate = 0.95;
+
+            utterance.onstart = () => button.classList.add('speaking');
+            utterance.onend = () => button.classList.remove('speaking');
+            utterance.onerror = (event) => {
+                console.error('Speech synthesis error:', event.error);
+                button.classList.remove('speaking');
+                alert('Maaf, fitur suara tidak didukung atau gagal di browser ini.');
+            };
+
+            speechSynthesis.speak(utterance);
         }
 
         function enhanceCodeBlocks(element) {
@@ -725,8 +845,10 @@
             const code = pre.querySelector('code');
             navigator.clipboard.writeText(code.innerText).then(() => {
                 button.textContent = 'Copied!';
+                button.classList.add('copied');
                 setTimeout(() => {
                     button.textContent = 'Copy';
+                    button.classList.remove('copied');
                 }, 2000);
             });
         }
@@ -845,6 +967,75 @@
                 location.reload();
             }
         }
+
+        // --- 8. SPEECH-TO-TEXT (INPUT SUARA) ---
+        function setupSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                console.warn("Speech Recognition tidak didukung di browser ini.");
+                document.getElementById("btn-mic").style.display = 'none'; // Sembunyikan tombol jika tidak didukung
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = true; // Terus mendengarkan bahkan setelah jeda
+            recognition.interimResults = true; // Dapatkan hasil sementara saat pengguna berbicara
+            recognition.lang = 'id-ID'; // Atur ke Bahasa Indonesia
+
+            recognition.onstart = () => {
+                isListening = true;
+                document.getElementById("btn-mic").classList.add("listening");
+                document.getElementById("user-input").placeholder = "Mendengarkan...";
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                document.getElementById("btn-mic").classList.remove("listening");
+                document.getElementById("user-input").placeholder = "Ketik pesan...";
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error:", event.error);
+                isListening = false;
+                document.getElementById("btn-mic").classList.remove("listening");
+                document.getElementById("user-input").placeholder = "Ketik pesan...";
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    alert("Izin mikrofon ditolak. Anda perlu mengizinkan akses mikrofon di pengaturan browser untuk menggunakan fitur ini.");
+                }
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                // Ulangi melalui hasil untuk memisahkan antara yang final dan sementara
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript + ' '; // Tambahkan spasi setelah setiap frasa final
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                const input = document.getElementById("user-input");
+                input.value = finalTranscript + interimTranscript;
+
+                // Auto-resize textarea
+                input.style.height = 'auto';
+                input.style.height = input.scrollHeight + 'px';
+            };
+        }
+
+        window.startVoiceRecognition = function() {
+            if (!recognition) return;
+
+            if (isListening) {
+                recognition.stop(); // Jika sedang mendengarkan, hentikan
+            } else {
+                // Jika tidak, bersihkan input dan mulai mendengarkan
+                document.getElementById("user-input").value = "";
+                finalTranscript = ""; // Reset transkrip final
+                recognition.start();
+            }
+        };
 
         // Service Worker
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
