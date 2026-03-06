@@ -11,7 +11,7 @@
     <!-- Library untuk format teks Markdown (Bold, Code, List) -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        body { font-family: 'Outfit', sans-serif; background-color: #111827; color: #F3F4F6; overflow: hidden; overscroll-behavior-y: none; /* Mencegah pull-to-refresh di HP */ }
+        body { font-family: 'Outfit', sans-serif; background-color: #111827; color: #F3F4F6; overscroll-behavior-y: none; /* Mencegah pull-to-refresh di HP */ }
         
         /* Sidebar Transition */
         #sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -39,6 +39,31 @@
         .prose ul { list-style-type: disc; padding-left: 20px; margin: 10px 0; }
         .prose ol { list-style-type: decimal; padding-left: 20px; margin: 10px 0; }
         .prose a { color: #6366f1; text-decoration: underline; }
+
+        /* Tombol Copy untuk Blok Kode */
+        .prose pre {
+            position: relative;
+        }
+        .copy-code-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 4px 8px;
+            font-size: 10px;
+            background-color: #374151;
+            color: #d1d5db;
+            border: 1px solid #4b5563;
+            border-radius: 6px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .prose pre:hover .copy-code-btn {
+            opacity: 1;
+        }
+        .copy-code-btn:active {
+            background-color: #4b5563;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -413,25 +438,19 @@
         window.resetChat = function() {
             if(engine) engine.resetChat();
             messages = []; // FIX: Hapus histori pesan secara eksplisit
-            document.getElementById("reset-suggestion")?.classList.add("hidden"); // Sembunyikan lagi pengingat
+            document.getElementById("reset-suggestion")?.classList.add("hidden"); // Sembunyikan pengingat
             
-            // FIX: Restore HTML structure lengkap (Empty State + Anchor) agar tidak error scrollIntoView
             const box = document.getElementById("chat-box");
-            box.innerHTML = `
-            <div id="empty-state" class="flex flex-col items-center justify-center h-full min-h-[50vh] text-center px-6 animate-fade-in">
-                <div class="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-xl shadow-indigo-500/20">
-                    <svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                </div>
-                <h2 class="text-2xl font-bold text-white mb-2 tracking-tight">Wayan AI</h2>
-                <p class="text-gray-400 text-sm max-w-xs mb-8 leading-relaxed">Asisten AI pribadi yang berjalan offline di browser Anda. Pilih model di menu untuk memulai.</p>
-                
-                <div class="grid grid-cols-1 gap-3 w-full max-w-sm">
-                    <button onclick="fillInput('Buatkan puisi pendek tentang hujan')" class="p-3.5 bg-gray-800/40 hover:bg-gray-800 border border-gray-700/50 hover:border-gray-600 rounded-xl text-sm text-gray-300 transition text-left flex items-center gap-3 group"><span class="text-lg group-hover:scale-110 transition">📝</span> Buatkan puisi tentang hujan</button>
-                    <button onclick="fillInput('Jelaskan apa itu HTML dalam bahasa sederhana')" class="p-3.5 bg-gray-800/40 hover:bg-gray-800 border border-gray-700/50 hover:border-gray-600 rounded-xl text-sm text-gray-300 transition text-left flex items-center gap-3 group"><span class="text-lg group-hover:scale-110 transition">💻</span> Jelaskan apa itu HTML</button>
-                </div>
-            </div>
-            <div id="chat-anchor"></div>
-            `;
+            // Hapus semua bubble chat yang dinamis, biarkan empty-state dan chat-anchor
+            Array.from(box.children).forEach(child => {
+                if (child.id !== 'empty-state' && child.id !== 'chat-anchor') {
+                    box.removeChild(child);
+                }
+            });
+
+            document.getElementById("empty-state").classList.remove("hidden"); // Tampilkan kembali empty state
+            // Pastikan chat-anchor berada di posisi paling bawah
+            box.appendChild(document.getElementById('chat-anchor'));
             
             if(document.getElementById("sidebar").classList.contains("sidebar-open")) toggleSidebar();
         }
@@ -512,6 +531,7 @@
                     if (delta) {
                         fullText += delta;
                         contentWrapper.innerHTML = marked.parse(fullText); // Update tampilan dengan markdown
+                        enhanceCodeBlocks(contentWrapper); // Tambahkan tombol copy
                         // FIX: Safe scroll (Cek apakah anchor ada sebelum scroll)
                         const anchor = document.getElementById('chat-anchor');
                         if(anchor) anchor.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -559,21 +579,15 @@
                    </div>`
                 : `<div class="flex items-end max-w-[88%] justify-start">
                      ${aiAvatar}
-                     <div class="px-5 py-3.5 bg-gray-800 text-gray-100 rounded-2xl rounded-tl-none border border-gray-700 shadow-md prose prose-invert text-sm leading-relaxed break-words select-text">${formattedText}</div>
+                     <div class="px-5 py-3.5 bg-sky-950 text-sky-100 rounded-2xl rounded-tl-none border border-sky-800 shadow-md prose prose-invert text-sm leading-relaxed break-words select-text">${formattedText}</div>
                    </div>`;
             
-            box.appendChild(div);
+            // Sisipkan bubble baru sebelum chat-anchor
+            const anchor = document.getElementById('chat-anchor');
+            box.insertBefore(div, anchor);
+            // Tambahkan tombol copy jika ada blok kode di pesan awal
+            enhanceCodeBlocks(div);
             
-            // FIX: Pastikan anchor selalu ada dan di posisi paling bawah
-            let anchor = document.getElementById('chat-anchor');
-            if (!anchor) {
-                anchor = document.createElement('div');
-                anchor.id = 'chat-anchor';
-                box.appendChild(anchor);
-            } else {
-                box.appendChild(anchor); // Pindahkan ke bawah
-            }
-
             setTimeout(() => {
                 anchor.scrollIntoView({ behavior: "smooth", block: "end" });
             }, 100);
@@ -594,23 +608,16 @@
             div.innerHTML = `
                 <div class="flex items-end max-w-[88%] justify-start">
                     ${aiAvatar}
-                    <div class="bubble-content-wrapper px-5 py-3.5 bg-gray-800 text-gray-100 rounded-2xl rounded-tl-none border border-gray-700 shadow-md">
+                    <div class="bubble-content-wrapper px-5 py-3.5 bg-sky-950 rounded-2xl rounded-tl-none border border-sky-800 shadow-md">
                         <div class="dot-pulse ml-2 my-1"></div>
                     </div>
                 </div>
             `;
-            box.appendChild(div);
+            // Sisipkan bubble loading sebelum chat-anchor
+            const anchor = document.getElementById('chat-anchor');
+            box.insertBefore(div, anchor);
             
-            // FIX: Pastikan anchor selalu ada
-            let anchor = document.getElementById('chat-anchor');
-            if (!anchor) {
-                anchor = document.createElement('div');
-                anchor.id = 'chat-anchor';
-                box.appendChild(anchor);
-            } else {
-                box.appendChild(anchor);
-            }
-
+            // Scroll ke anchor
             setTimeout(() => {
                 anchor.scrollIntoView({ behavior: "smooth", block: "end" });
             }, 100);
@@ -622,6 +629,32 @@
             if (engine) {
                 engine.interruptGenerate();
             }
+        }
+
+        function enhanceCodeBlocks(element) {
+            const codeBlocks = element.querySelectorAll('pre');
+            codeBlocks.forEach(pre => {
+                // Mencegah duplikasi tombol
+                if (pre.querySelector('.copy-code-btn')) {
+                    return;
+                }
+                const button = document.createElement('button');
+                button.className = 'copy-code-btn';
+                button.textContent = 'Copy';
+                button.onclick = () => copyCode(button);
+                pre.appendChild(button);
+            });
+        }
+
+        function copyCode(button) {
+            const pre = button.parentElement;
+            const code = pre.querySelector('code');
+            navigator.clipboard.writeText(code.innerText).then(() => {
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            });
         }
 
         window.fillInput = function(text) {
