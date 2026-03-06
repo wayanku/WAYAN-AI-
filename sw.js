@@ -1,10 +1,11 @@
-const CACHE_NAME = 'wayan-ai-v11'; // Versi cache baru (Cache Ikon)
+const CACHE_NAME = 'wayan-ai-v14'; // Versi cache baru (Cache Ikon)
 const urlsToCache = [
     './',
     './index.html',
     './manifest.json',
     'https://cdn.tailwindcss.com',
     'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap', // Font yang benar
+    'https://cdn.jsdelivr.net/npm/marked/marked.min.js' // Library Markdown
     'https://cdn.jsdelivr.net/npm/marked/marked.min.js', // Library Markdown
     'https://cdn-icons-png.flaticon.com/512/12222/12222560.png' // Ikon Aplikasi
 ];
