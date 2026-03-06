@@ -377,7 +377,7 @@
         // --- 3. CHAT LOGIC ---
 
         let messages = [];
-        const defaultSystemPrompt = "Kamu adalah asisten AI yang cerdas. Jawab pertanyaan dengan singkat, padat, dan jelas.";
+        const defaultSystemPrompt = "Kamu adalah asisten AI faktual. Jawab hanya berdasarkan fakta. Jangan mengarang atau berhalusinasi. Jika tidak tahu, katakan 'Saya tidak tahu'. Gunakan Bahasa Indonesia.";
 
         window.sendMessage = async function() {
             const input = document.getElementById("user-input");
@@ -429,9 +429,10 @@
                 const stream = await engine.chat.completions.create({ 
                     messages: messagesToSend, // Gunakan history yang sudah dipangkas
                     stream: true, // AKTIFKAN STREAMING
-                    temperature: 0.5, // Kurangi kreativitas agar lebih akurat (0.0 - 1.0)
-                    top_p: 0.9,       // Filter kata-kata yang kurang relevan
-                    frequency_penalty: 0.6 // Cegah pengulangan kata (seperti "sekarang... sekarang")
+                    // Tuning Parameter untuk mengurangi halusinasi (jawaban ngaco)
+                    temperature: 0.3,       // Dibuat sangat rendah agar AI fokus pada fakta, tidak kreatif.
+                    top_p: 0.9,             // Standar.
+                    frequency_penalty: 0.5  // Mencegah AI mengulang kata yang sama.
                 });
 
                 let fullText = "";
