@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wayan-ai-v56'; // Versi cache baru
+const CACHE_NAME = 'wayan-ai-v57'; // Versi cache baru
 const urlsToCache = [
     './',
     './index.html',
