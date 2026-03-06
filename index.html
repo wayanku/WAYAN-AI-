@@ -2,131 +2,190 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Wayan AI - Multi Model</title>
+    <!-- FIX: Tambahan interactive-widget agar keyboard tidak menutupi chat di HP -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+    <title>Wayan AI</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Library untuk format teks Markdown (Bold, Code, List) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0B0F19; color: #E2E8F0; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .animate-pop { animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes pop { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        /* Loading Dots */
-        .typing span { animation: blink 1.4s infinite both; height: 5px; width: 5px; background: #94A3B8; border-radius: 50%; display: inline-block; margin: 0 1px; }
-        .typing span:nth-child(2) { animation-delay: 0.2s; } .typing span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
+        body { font-family: 'Outfit', sans-serif; background-color: #111827; color: #F3F4F6; overflow: hidden; overscroll-behavior-y: none; /* Mencegah pull-to-refresh di HP */ }
+        
+        /* Sidebar Transition */
+        #sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .sidebar-closed { transform: translateX(-100%); }
+        .sidebar-open { transform: translateX(0); }
+        
+        /* Custom Scroll */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Glass Effect */
+        .glass { background: rgba(17, 24, 39, 0.95); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        
+        /* Loading Animation */
+        .dot-pulse { position: relative; left: -9999px; width: 6px; height: 6px; border-radius: 5px; background-color: #9CA3AF; color: #9CA3AF; box-shadow: 9999px 0 0 -5px; animation: dot-pulse 1.5s infinite linear; animation-delay: 0.25s; }
+        .dot-pulse::before, .dot-pulse::after { content: ""; display: inline-block; position: absolute; top: 0; width: 6px; height: 6px; border-radius: 5px; background-color: #9CA3AF; color: #9CA3AF; }
+        .dot-pulse::before { box-shadow: 9984px 0 0 -5px; animation: dot-pulse 1.5s infinite linear; animation-delay: 0s; }
+        .dot-pulse::after { box-shadow: 10014px 0 0 -5px; animation: dot-pulse 1.5s infinite linear; animation-delay: 0.5s; }
+        @keyframes dot-pulse { 0% { box-shadow: 9999px 0 0 -5px; } 30% { box-shadow: 9999px 0 0 2px; } 60%, 100% { box-shadow: 9999px 0 0 -5px; } }
+
+        /* Markdown Styles untuk Chat Bubble */
+        .prose p { margin-bottom: 0.5em; }
+        .prose p:last-child { margin-bottom: 0; }
+        .prose pre { background: #0f1115; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 10px 0; border: 1px solid #374151; }
+        .prose code { font-family: 'Menlo', 'Consolas', monospace; background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 4px; font-size: 0.85em; color: #e5e7eb; }
+        .prose ul { list-style-type: disc; padding-left: 20px; margin: 10px 0; }
+        .prose ol { list-style-type: decimal; padding-left: 20px; margin: 10px 0; }
+        .prose a { color: #6366f1; text-decoration: underline; }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
+<body class="h-screen flex flex-col">
 
-    <!-- HEADER -->
-    <header class="fixed top-0 w-full z-40 glass px-4 py-3 flex justify-between items-center shadow-2xl">
-        <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                <span class="font-bold text-white text-lg">W</span>
-            </div>
-            <div>
-                <h1 class="font-bold text-sm tracking-wide">WAYAN AI</h1>
-                <div class="flex items-center gap-1.5">
-                    <span id="status-dot" class="w-2 h-2 rounded-full bg-yellow-500"></span>
-                    <span id="model-badge" class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Pilih Model</span>
-                </div>
-            </div>
+    <!-- OVERLAY -->
+    <div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity backdrop-blur-sm"></div>
+
+    <!-- SIDEBAR MENU -->
+    <aside id="sidebar" class="fixed top-0 left-0 h-full w-[85%] max-w-xs bg-gray-900 z-50 shadow-2xl sidebar-closed flex flex-col border-r border-gray-800">
+        <div class="p-5 border-b border-gray-800 flex justify-between items-center bg-gray-900/50">
+            <h2 class="font-bold text-xl text-white tracking-wide">Pengaturan</h2>
+            <button onclick="toggleSidebar()" class="text-gray-400 hover:text-white transition">✕</button>
         </div>
-        <button onclick="deleteModel()" class="text-xs bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition border border-red-500/20">
-            Reset AI
-        </button>
-    </header>
-
-    <!-- SETUP SCREEN (Pilih Model) -->
-    <section id="setup-screen" class="flex-1 flex flex-col items-center justify-center p-6 z-30 relative">
-        <div class="w-full max-w-md space-y-6 animate-pop">
-            <div class="text-center space-y-2">
-                <h2 class="text-2xl font-bold text-white">Selamat Datang</h2>
-                <p class="text-slate-400 text-sm">Pilih otak AI yang ingin Anda download ke perangkat ini.</p>
-            </div>
-
-            <div class="space-y-3">
-                <!-- Pilihan 1: TinyLlama -->
-                <label class="block glass p-4 rounded-xl cursor-pointer hover:bg-slate-800/50 transition border border-indigo-500/30 relative overflow-hidden group">
-                    <input type="radio" name="model_select" value="TinyLlama-1.1B-Chat-v0.4-q4f16_1-MLC" class="peer hidden" checked>
-                    <div class="absolute inset-0 border-2 border-indigo-500 opacity-0 peer-checked:opacity-100 rounded-xl transition"></div>
-                    <div class="flex justify-between items-center relative z-10">
-                        <div>
-                            <div class="font-bold text-white flex items-center gap-2">⚡ TinyLlama <span class="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded">Rekomen</span></div>
-                            <div class="text-xs text-slate-400 mt-1">Ukuran: ±680 MB • Sangat Cepat</div>
-                        </div>
-                        <div class="w-4 h-4 rounded-full border border-slate-500 peer-checked:bg-indigo-500 peer-checked:border-indigo-500"></div>
-                    </div>
-                </label>
-
-                <!-- Pilihan 2: Qwen -->
-                <label class="block glass p-4 rounded-xl cursor-pointer hover:bg-slate-800/50 transition border border-slate-700 relative overflow-hidden group">
-                    <input type="radio" name="model_select" value="Qwen2-1.5B-Instruct-q4f16_1-MLC" class="peer hidden">
-                    <div class="absolute inset-0 border-2 border-indigo-500 opacity-0 peer-checked:opacity-100 rounded-xl transition"></div>
-                    <div class="flex justify-between items-center relative z-10">
-                        <div>
-                            <div class="font-bold text-white">🧠 Qwen 1.5B</div>
-                            <div class="text-xs text-slate-400 mt-1">Ukuran: ±1.0 GB • Pintar & Seimbang</div>
-                        </div>
-                        <div class="w-4 h-4 rounded-full border border-slate-500 peer-checked:bg-indigo-500 peer-checked:border-indigo-500"></div>
-                    </div>
-                </label>
-
-                <!-- Pilihan 3: Gemma -->
-                <label class="block glass p-4 rounded-xl cursor-pointer hover:bg-slate-800/50 transition border border-slate-700 relative overflow-hidden group">
-                    <input type="radio" name="model_select" value="gemma-2b-it-q4f16_1-MLC" class="peer hidden">
-                    <div class="absolute inset-0 border-2 border-indigo-500 opacity-0 peer-checked:opacity-100 rounded-xl transition"></div>
-                    <div class="flex justify-between items-center relative z-10">
-                        <div>
-                            <div class="font-bold text-white">💎 Gemma 2B (Google)</div>
-                            <div class="text-xs text-slate-400 mt-1">Ukuran: ±1.4 GB • Paling Cerdas</div>
-                        </div>
-                        <div class="w-4 h-4 rounded-full border border-slate-500 peer-checked:bg-indigo-500 peer-checked:border-indigo-500"></div>
-                    </div>
-                </label>
-            </div>
-
-            <button onclick="startDownload()" id="btn-start" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25 transition transform active:scale-95">
-                DOWNLOAD & MULAI
+        
+        <div class="p-4 flex-1 overflow-y-auto space-y-6">
+            <!-- New Chat -->
+            <button onclick="resetChat()" class="w-full flex items-center gap-3 px-4 py-3.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 rounded-xl font-semibold transition shadow-lg shadow-indigo-500/20 text-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Percakapan Baru
             </button>
 
-            <!-- Loading UI -->
-            <div id="loading-area" class="hidden space-y-2">
-                <div class="flex justify-between text-xs font-mono text-indigo-300">
-                    <span id="loading-status">Connecting...</span>
-                    <span id="loading-percent">0%</span>
+            <!-- Memory Monitor (New Feature) -->
+            <div id="memory-card" class="hidden p-3.5 bg-gray-800/50 rounded-xl border border-gray-700/50">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">RAM Browser</span>
+                    <span id="mem-val" class="text-xs font-mono text-indigo-300 font-bold">0 MB</span>
                 </div>
-                <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div id="progress-bar" class="h-full bg-indigo-500 w-0 transition-all duration-300"></div>
+                <div class="w-full bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                    <div id="mem-bar" class="bg-indigo-500 h-full w-0 transition-all duration-500 ease-out"></div>
                 </div>
-                <p class="text-[10px] text-slate-500 text-center pt-2">⚠️ Jangan matikan layar atau keluar dari browser.</p>
             </div>
-            
-            <div id="error-msg" class="hidden p-3 bg-red-900/30 border border-red-500/30 rounded-lg text-xs text-red-200 text-center"></div>
-        </div>
-    </section>
 
-    <!-- CHAT SCREEN -->
-    <main id="chat-screen" class="hidden flex-1 flex flex-col pt-16 pb-20 w-full max-w-3xl mx-auto relative">
-        <div id="chat-box" class="flex-1 overflow-y-auto px-4 py-4 space-y-4 hide-scrollbar scroll-smooth">
-            <!-- Intro Bubble -->
-            <div class="flex justify-center">
-                <div class="bg-slate-800/50 text-slate-400 text-xs px-4 py-2 rounded-full border border-slate-700">
-                    Wayan AI siap! Semua chat tersimpan lokal (Offline).
+            <!-- Model Selection -->
+            <div class="space-y-3">
+                <label class="text-xs text-gray-500 uppercase font-bold tracking-wider ml-1">Pilih Otak AI</label>
+                
+                <button onclick="switchModel('TinyLlama-1.1B-Chat-v0.4-q4f16_1-MLC')" class="w-full text-left p-3.5 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 active:border-indigo-500 transition flex justify-between items-center group">
+                    <div>
+                        <div class="font-bold text-gray-200 text-sm">⚡ TinyLlama (Ringan)</div>
+                        <div class="text-[10px] text-gray-500 mt-0.5">Wajib untuk iPhone • 680 MB</div>
+                    </div>
+                    <div id="check-TinyLlama" class="hidden text-indigo-400 font-bold text-xl">✓</div>
+                </button>
+
+                <button onclick="switchModel('Qwen2-1.5B-Instruct-q4f16_1-MLC')" class="w-full text-left p-3.5 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 active:border-indigo-500 transition flex justify-between items-center group">
+                    <div>
+                        <div class="font-bold text-gray-200 text-sm">🧠 Qwen 1.5B</div>
+                        <div class="text-[10px] text-gray-500 mt-0.5">Seimbang • 1.0 GB</div>
+                    </div>
+                    <div id="check-Qwen2" class="hidden text-indigo-400 font-bold text-xl">✓</div>
+                </button>
+
+                <button onclick="switchModel('gemma-2b-it-q4f16_1-MLC')" class="w-full text-left p-3.5 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 active:border-indigo-500 transition flex justify-between items-center group">
+                    <div>
+                        <div class="font-bold text-gray-200 text-sm">💎 Gemma 2B</div>
+                        <div class="text-[10px] text-gray-500 mt-0.5">Paling Pintar • 1.4 GB</div>
+                    </div>
+                    <div id="check-gemma" class="hidden text-indigo-400 font-bold text-xl">✓</div>
+                </button>
+            </div>
+
+            <!-- Memory Actions -->
+            <div class="pt-6 border-t border-gray-800">
+                 <button onclick="deleteModel()" class="w-full text-left text-red-400 text-xs hover:text-red-300 py-3 px-2 rounded hover:bg-red-500/10 transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    Hapus Data Model (Reset Memori)
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- HEADER -->
+    <header class="glass fixed top-0 w-full z-30 px-4 py-3 flex justify-between items-center shadow-lg">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="p-2 -ml-2 text-gray-300 hover:text-white active:scale-95 transition">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+            </button>
+            <div>
+                <h1 class="font-bold text-lg tracking-tight text-white">Wayan AI</h1>
+                <p id="current-model-label" class="text-[10px] text-gray-400 font-mono">Offline Mode</p>
+            </div>
+        </div>
+        <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-red-500 shadow-md transition-colors duration-500"></div>
+    </header>
+
+    <!-- RESUME SCREEN (Lanjutkan) -->
+    <div id="resume-screen" class="hidden absolute inset-0 bg-gray-900 z-20 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+        <div class="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center mb-6 shadow-2xl shadow-indigo-500/20">
+            <span class="text-3xl font-bold text-white">W</span>
+        </div>
+        <h2 class="text-2xl font-bold mb-2 text-white">Wayan AI Offline</h2>
+        <p class="text-sm text-gray-400 mb-8 max-w-xs">Model <span id="last-model-name" class="text-indigo-400 font-mono font-bold">...</span> terdeteksi di memori.</p>
+        
+        <button onclick="initEngine(lastUsedModel)" class="w-full max-w-xs py-3.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 rounded-xl font-bold text-white transition shadow-lg">
+            Lanjutkan Chat
+        </button>
+        <button onclick="toggleSidebar(); document.getElementById('resume-screen').classList.add('hidden')" class="mt-6 text-xs text-gray-500 hover:text-gray-300 underline py-2">
+            Pilih Model Lain
+        </button>
+    </div>
+
+    <!-- MAIN CHAT AREA -->
+    <main class="flex-1 pt-16 pb-20 w-full max-w-3xl mx-auto flex flex-col relative bg-[#111827]">
+        <div id="chat-box" class="flex-1 overflow-y-auto px-4 py-4 space-y-4 no-scrollbar scroll-smooth">
+            <!-- Empty State / Welcome Screen -->
+            <div id="empty-state" class="flex flex-col items-center justify-center h-full min-h-[50vh] text-center px-6 animate-fade-in">
+                <div class="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-xl shadow-indigo-500/20">
+                    <svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2 tracking-tight">Wayan AI</h2>
+                <p class="text-gray-400 text-sm max-w-xs mb-8 leading-relaxed">Asisten AI pribadi yang berjalan offline di browser Anda. Pilih model di menu untuk memulai.</p>
+                
+                <div class="grid grid-cols-1 gap-3 w-full max-w-sm">
+                    <button onclick="fillInput('Buatkan puisi pendek tentang hujan')" class="p-3.5 bg-gray-800/40 hover:bg-gray-800 border border-gray-700/50 hover:border-gray-600 rounded-xl text-sm text-gray-300 transition text-left flex items-center gap-3 group"><span class="text-lg group-hover:scale-110 transition">📝</span> Buatkan puisi tentang hujan</button>
+                    <button onclick="fillInput('Jelaskan apa itu HTML dalam bahasa sederhana')" class="p-3.5 bg-gray-800/40 hover:bg-gray-800 border border-gray-700/50 hover:border-gray-600 rounded-xl text-sm text-gray-300 transition text-left flex items-center gap-3 group"><span class="text-lg group-hover:scale-110 transition">💻</span> Jelaskan apa itu HTML</button>
                 </div>
             </div>
+        </div>
+
+        <!-- PROGRESS DOWNLOAD (Floating) -->
+        <div id="download-progress" class="hidden absolute top-24 left-6 right-6 bg-gray-800/95 backdrop-blur p-5 rounded-2xl border border-gray-600 shadow-2xl z-20">
+            <div class="flex justify-between text-xs mb-3 font-semibold">
+                <span id="dl-status" class="text-indigo-400">Menghubungkan...</span>
+                <span id="dl-percent" class="text-white">0%</span>
+            </div>
+            <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div id="dl-bar" class="h-full bg-indigo-500 w-0 transition-all duration-300 ease-out"></div>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-3 text-center flex items-center justify-center gap-1">
+                <svg class="w-3 h-3 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                Jaga layar tetap menyala
+            </p>
         </div>
     </main>
 
     <!-- INPUT AREA -->
-    <footer id="input-area" class="hidden fixed bottom-0 w-full glass p-3 z-50">
+    <footer class="fixed bottom-0 w-full glass p-3 z-30 pb-safe">
         <div class="max-w-3xl mx-auto flex gap-2 items-end">
-            <textarea id="user-input" rows="1" class="flex-1 bg-slate-800/80 text-white border border-slate-600 rounded-2xl px-4 py-3 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm resize-none max-h-32 placeholder-slate-500" placeholder="Ketik pesan..." oninput="autoResize(this)" onkeydown="handleEnter(event)"></textarea>
-            <button onclick="sendMessage()" id="btn-send" class="p-3 bg-indigo-600 rounded-full text-white shadow-lg hover:bg-indigo-500 transition disabled:opacity-50 disabled:grayscale">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <textarea id="user-input" rows="1" disabled 
+                class="flex-1 bg-gray-800 text-white border border-gray-700 rounded-2xl px-4 py-3.5 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm resize-none max-h-32 disabled:opacity-50 placeholder-gray-500" 
+                placeholder="Siapkan model dulu..." 
+                oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" 
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+                
+            <button onclick="sendMessage()" id="btn-send" disabled 
+                class="p-3.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 rounded-full text-white shadow-lg disabled:opacity-50 disabled:bg-gray-700 transition flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"></path></svg>
             </button>
         </div>
     </footer>
@@ -136,204 +195,307 @@
         import * as webllm from "https://esm.run/@mlc-ai/web-llm";
 
         let engine = null;
-        let selectedModel = "";
-        let messages = [];
-        let wakeLock = null; // Agar layar tidak mati
+        let lastUsedModel = localStorage.getItem("wayan_model_id");
+        let wakeLock = null; // Variable untuk menjaga layar menyala
 
-        // --- 1. SETUP & DOWNLOAD ---
-
-        window.startDownload = async function() {
-            // Ambil model yang dipilih user
-            const radios = document.getElementsByName('model_select');
-            for (const radio of radios) {
-                if (radio.checked) {
-                    selectedModel = radio.value;
-                    break;
-                }
+        // --- 1. INITIALIZATION ---
+        
+        window.onload = () => {
+            // Cek Dukungan WebGPU
+            if (!navigator.gpu) {
+                alert("Maaf, Browser/HP ini tidak mendukung WebGPU. AI tidak dapat berjalan. Coba gunakan Chrome terbaru di Android atau Update iOS.");
+                return;
             }
-            
-            // UI Update
-            const btn = document.getElementById("btn-start");
-            const loadingArea = document.getElementById("loading-area");
-            const errorMsg = document.getElementById("error-msg");
-            
-            btn.classList.add("hidden");
-            loadingArea.classList.remove("hidden");
-            errorMsg.classList.add("hidden");
 
-            // Aktifkan Wake Lock (Agar layar HP tidak mati saat download)
+            if (lastUsedModel) {
+                // Mode Lanjutkan
+                document.getElementById("empty-state").classList.add("hidden");
+                document.getElementById("resume-screen").classList.remove("hidden");
+                document.getElementById("last-model-name").innerText = formatModelName(lastUsedModel);
+                updateMenuCheck(lastUsedModel);
+            } else {
+                // Pengguna Baru
+                toggleSidebar();
+            }
+            initMemoryMonitor(); // Jalankan monitor memori
+        };
+
+        window.initEngine = async function(modelId) {
+            // UI Handling
+            document.getElementById("resume-screen").classList.add("hidden");
+            if(document.getElementById("sidebar").classList.contains("sidebar-open")) toggleSidebar();
+            
+            const progressBox = document.getElementById("download-progress");
+            const statusLabel = document.getElementById("current-model-label");
+            const inputField = document.getElementById("user-input");
+            const btnSend = document.getElementById("btn-send");
+
+            // WAKE LOCK (Anti Layar Mati)
             requestWakeLock();
 
+            // Memori Cleanup (PENTING UNTUK IPHONE)
+            if (engine) {
+                statusLabel.innerText = "Membersihkan RAM...";
+                // Delay sebentar agar UI sempat update
+                await new Promise(r => setTimeout(r, 100));
+                await engine.unload(); 
+                engine = null;
+            }
+
+            progressBox.classList.remove("hidden");
+            inputField.disabled = true;
+            inputField.placeholder = "Sedang memuat otak AI...";
+
             try {
-                // Inisialisasi Engine AI
+                // Simpan pilihan
+                localStorage.setItem("wayan_model_id", modelId);
+                lastUsedModel = modelId;
+                updateMenuCheck(modelId);
+
+                // Init WebLLM
                 engine = await webllm.CreateMLCEngine(
-                    selectedModel,
+                    modelId,
                     { 
                         initProgressCallback: (info) => {
-                            // Update text dan progress bar
-                            document.getElementById("loading-status").innerText = info.text;
+                            document.getElementById("dl-status").innerText = info.text;
                             if(info.progress) {
                                 const p = Math.round(info.progress * 100);
-                                document.getElementById("progress-bar").style.width = p + "%";
-                                document.getElementById("loading-percent").innerText = p + "%";
+                                document.getElementById("dl-bar").style.width = p + "%";
+                                document.getElementById("dl-percent").innerText = p + "%";
                             }
                         }
                     }
                 );
 
-                // BERHASIL!
-                enterChatMode();
+                // Sukses
+                progressBox.classList.add("hidden");
+                statusLabel.innerText = formatModelName(modelId) + " (Ready)";
+                document.getElementById("status-dot").classList.replace("bg-red-500", "bg-green-500");
+                document.getElementById("status-dot").classList.add("shadow-[0_0_8px_limegreen]");
+                
+                inputField.disabled = false;
+                inputField.placeholder = "Ketik pesan...";
+                btnSend.disabled = false;
+                
+                // Animasi pesan pembuka
+                setTimeout(() => {
+                   addBubble(`Halo! Model <b>${formatModelName(modelId)}</b> siap digunakan.`, false); 
+                }, 500);
 
             } catch (err) {
-                // ERROR HANDLING
                 console.error(err);
-                btn.classList.remove("hidden");
-                loadingArea.classList.add("hidden");
-                errorMsg.classList.remove("hidden");
+                progressBox.classList.add("hidden");
                 
-                let pesanError = "Terjadi kesalahan.";
-                if(err.message.includes("fetch") || err.message.includes("Network")) {
-                    pesanError = "Gagal Download: Koneksi Internet terputus. Pastikan WiFi stabil.";
-                } else if(err.message.includes("buffer")) {
-                    pesanError = "Gagal: Memori HP tidak cukup. Coba tutup aplikasi lain atau pilih model TinyLlama.";
-                } else {
-                    pesanError = "Error: " + err.message;
-                }
-                errorMsg.innerText = pesanError;
+                let errorMsg = "Gagal memuat model.";
+                if(err.message.includes("fetch")) errorMsg = "Koneksi internet terputus saat download.";
+                if(err.message.includes("buffer") || err.message.includes("memory")) errorMsg = "Memori HP Penuh. Gunakan TinyLlama.";
+                
+                alert(`${errorMsg}\n\nTeknis: ${err.message}`);
+                localStorage.removeItem("wayan_model_id"); 
+                toggleSidebar();
             }
         }
 
-        function enterChatMode() {
-            document.getElementById("setup-screen").classList.add("hidden");
-            document.getElementById("chat-screen").classList.remove("hidden");
-            document.getElementById("input-area").classList.remove("hidden");
+        // --- 2. MENU FUNCTIONS ---
+
+        window.toggleSidebar = function() {
+            const sb = document.getElementById("sidebar");
+            const ov = document.getElementById("overlay");
             
-            // Update Header
-            document.getElementById("status-dot").classList.replace("bg-yellow-500", "bg-green-500");
-            document.getElementById("status-dot").classList.add("shadow-[0_0_8px_rgba(34,197,94,0.8)]");
-            
-            // Tampilkan nama model pendek
-            let modelName = "AI";
-            if(selectedModel.includes("Tiny")) modelName = "TinyLlama";
-            else if(selectedModel.includes("Qwen")) modelName = "Qwen 1.5B";
-            else if(selectedModel.includes("gemma")) modelName = "Gemma 2B";
-            
-            document.getElementById("model-badge").innerText = modelName + " (Ready)";
+            if (sb.classList.contains("sidebar-closed")) {
+                sb.classList.remove("sidebar-closed");
+                sb.classList.add("sidebar-open");
+                ov.classList.remove("hidden");
+            } else {
+                sb.classList.add("sidebar-closed");
+                sb.classList.remove("sidebar-open");
+                ov.classList.add("hidden");
+            }
         }
 
-        // --- 2. LOGIKA CHAT ---
+        window.switchModel = function(modelId) {
+            if(modelId === lastUsedModel && engine) {
+                toggleSidebar();
+                return;
+            }
+            if(confirm("Ganti ke model " + formatModelName(modelId) + "? Chat saat ini akan hilang.")) {
+                document.getElementById("chat-box").innerHTML = ""; 
+                initEngine(modelId);
+            }
+        }
+
+        window.resetChat = function() {
+            if(engine) engine.resetChat();
+            document.getElementById("chat-box").innerHTML = ''; // Clear chat
+            document.getElementById("empty-state").classList.remove("hidden"); // Show welcome again
+            if(document.getElementById("sidebar").classList.contains("sidebar-open")) toggleSidebar();
+        }
+
+        // --- 3. CHAT LOGIC ---
+
+        let messages = [];
 
         window.sendMessage = async function() {
             const input = document.getElementById("user-input");
             const text = input.value.trim();
-            if (!text || !engine) return;
+            if(!text || !engine) return;
 
-            // Tampilkan Chat User
             addBubble(text, true);
             input.value = "";
             input.style.height = 'auto';
-            document.getElementById("btn-send").disabled = true;
 
-            // Loading Bubble
-            const loadingId = addLoadingBubble();
+            const loadingId = addLoading();
             messages.push({ role: "user", content: text });
 
             try {
                 const reply = await engine.chat.completions.create({ messages });
                 const aiText = reply.choices[0].message.content;
                 
-                removeElement(loadingId);
+                document.getElementById(loadingId).remove();
                 addBubble(aiText, false);
                 messages.push({ role: "assistant", content: aiText });
-                
-            } catch (e) {
-                removeElement(loadingId);
-                addBubble("Maaf, ada error saat memproses jawaban.", false);
+
+            } catch (err) {
+                document.getElementById(loadingId).remove();
+                addBubble("⚠️ Error: Koneksi putus atau RAM penuh. Coba Reset Chat.", false);
             }
-            
-            document.getElementById("btn-send").disabled = false;
         }
+
+        // --- 4. UTILS ---
 
         function addBubble(text, isUser) {
             const box = document.getElementById("chat-box");
             
-            // Format Markdown Bold & Code
-            let cleanText = text
-                .replace(/\n/g, "<br>")
-                .replace(/\*\*(.*?)\*\*/g, "<b class='text-indigo-300'>$1</b>")
-                .replace(/`(.*?)`/g, "<code class='bg-slate-700 px-1 py-0.5 rounded text-xs font-mono text-yellow-300'>$1</code>");
+            // Sembunyikan Empty State jika ada pesan baru
+            const emptyState = document.getElementById("empty-state");
+            if(emptyState && !emptyState.classList.contains("hidden")) emptyState.classList.add("hidden");
 
             const div = document.createElement("div");
-            div.className = `flex w-full ${isUser ? 'justify-end' : 'justify-start'} animate-pop`;
-            div.innerHTML = `
-                <div class="max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-md ${
-                    isUser 
-                    ? 'bg-indigo-600 text-white rounded-tr-sm' 
-                    : 'bg-slate-700 text-slate-200 rounded-tl-sm border border-slate-600'
-                }">
-                    ${cleanText}
-                </div>
-            `;
+            div.className = `flex w-full ${isUser ? 'justify-end' : 'justify-start'} mb-6 animate-fade-in group`;
+            
+            // Format Markdown menggunakan library 'marked'
+            let formattedText = isUser ? text.replace(/\n/g, "<br>") : marked.parse(text);
+
+            // Avatar HTML
+            const userAvatar = `<div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0 ml-2 shadow-lg border border-indigo-400/30"><svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></div>`;
+            const aiAvatar = `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-600 flex items-center justify-center flex-shrink-0 mr-2 shadow-lg border border-emerald-400/30"><svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>`;
+
+            div.innerHTML = isUser 
+                ? `<div class="flex items-end max-w-[88%] justify-end">
+                     <div class="px-5 py-3.5 bg-indigo-600 text-white rounded-2xl rounded-tr-none shadow-md prose prose-invert text-sm leading-relaxed break-words">${formattedText}</div>
+                     ${userAvatar}
+                   </div>`
+                : `<div class="flex items-end max-w-[88%] justify-start">
+                     ${aiAvatar}
+                     <div class="px-5 py-3.5 bg-gray-800 text-gray-100 rounded-2xl rounded-tl-none border border-gray-700 shadow-md prose prose-invert text-sm leading-relaxed break-words select-text">${formattedText}</div>
+                   </div>`;
+            
             box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
+            // Smooth scroll fix for mobile
+            setTimeout(() => { box.scrollTop = box.scrollHeight; }, 100);
         }
 
-        function addLoadingBubble() {
+        function addLoading() {
             const box = document.getElementById("chat-box");
+            const emptyState = document.getElementById("empty-state");
+            if(emptyState && !emptyState.classList.contains("hidden")) emptyState.classList.add("hidden");
+
             const id = "load-" + Date.now();
             const div = document.createElement("div");
             div.id = id;
-            div.className = "flex w-full justify-start animate-pop";
+            div.className = "flex w-full justify-start mb-6 animate-fade-in";
+            
+            const aiAvatar = `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-600 flex items-center justify-center flex-shrink-0 mr-2 shadow-lg border border-emerald-400/30"><svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>`;
+
             div.innerHTML = `
-                <div class="bg-slate-700/50 px-4 py-3 rounded-2xl rounded-tl-sm border border-slate-600/50">
-                    <div class="typing"><span></span><span></span><span></span></div>
+                <div class="flex items-end max-w-[85%]">
+                    ${aiAvatar}
+                    <div class="bg-gray-800 px-5 py-4 rounded-2xl rounded-tl-none border border-gray-700 shadow-md">
+                        <div class="dot-pulse ml-2"></div>
+                    </div>
                 </div>
             `;
             box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
+            setTimeout(() => { box.scrollTop = box.scrollHeight; }, 100);
             return id;
         }
 
-        // --- 3. UTILITIES ---
-
-        window.autoResize = (el) => {
-            el.style.height = 'auto';
-            el.style.height = el.scrollHeight + 'px';
+        window.fillInput = function(text) {
+            const input = document.getElementById("user-input");
+            input.value = text;
+            input.focus();
+            input.style.height = 'auto';
+            input.style.height = input.scrollHeight + 'px';
         }
 
-        window.handleEnter = (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                window.sendMessage();
+        function formatModelName(raw) {
+            if(raw.includes("Tiny")) return "TinyLlama";
+            if(raw.includes("Qwen")) return "Qwen 1.5B";
+            if(raw.includes("gemma")) return "Gemma 2B";
+            return "AI Model";
+        }
+
+        function updateMenuCheck(activeId) {
+            document.querySelectorAll("[id^='check-']").forEach(el => el.classList.add("hidden"));
+            if(activeId.includes("Tiny")) document.getElementById("check-TinyLlama").classList.remove("hidden");
+            if(activeId.includes("Qwen")) document.getElementById("check-Qwen2").classList.remove("hidden");
+            if(activeId.includes("gemma")) document.getElementById("check-gemma").classList.remove("hidden");
+        }
+
+        // --- 5. MEMORY MONITOR ---
+        function initMemoryMonitor() {
+            // Cek apakah browser mendukung API memory (Chrome/Edge/Android supports this)
+            if (performance && performance.memory) {
+                document.getElementById("memory-card").classList.remove("hidden");
+                
+                setInterval(() => {
+                    const mem = performance.memory;
+                    const used = mem.usedJSHeapSize / 1048576; // Convert Byte to MB
+                    const limit = mem.jsHeapSizeLimit / 1048576;
+                    
+                    // Update Text
+                    document.getElementById("mem-val").innerText = Math.round(used) + " MB";
+                    
+                    // Update Bar Width
+                    const percent = Math.min(100, (used / limit) * 100);
+                    document.getElementById("mem-bar").style.width = percent + "%";
+                    
+                    // Warna peringatan jika memori > 80% limit browser
+                    const bar = document.getElementById("mem-bar");
+                    if(percent > 80) {
+                        bar.classList.remove("bg-indigo-500");
+                        bar.classList.add("bg-red-500");
+                    } else {
+                        bar.classList.add("bg-indigo-500");
+                        bar.classList.remove("bg-red-500");
+                    }
+                }, 2000); // Update setiap 2 detik
             }
         }
 
-        function removeElement(id) {
-            const el = document.getElementById(id);
-            if(el) el.remove();
-        }
-
-        // Fungsi agar layar tidak mati
+        // WAKE LOCK FUNCTION (Agar Layar Tidak Mati)
         async function requestWakeLock() {
             try {
-                wakeLock = await navigator.wakeLock.request('screen');
-                console.log('Screen Wake Lock active');
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock aktif');
+                }
             } catch (err) {
-                console.log('Wake Lock error:', err);
+                console.log('Wake Lock gagal:', err);
             }
         }
 
         window.deleteModel = async function() {
-            if(!confirm("Hapus semua data AI? Anda harus download lagi nanti.")) return;
-            const keys = await caches.keys();
-            for(const k of keys) {
-                if(k.includes("webllm")) await caches.delete(k);
+            if(confirm("Yakin hapus semua data offline?")) {
+                const keys = await caches.keys();
+                for(const k of keys) if(k.includes("webllm")) await caches.delete(k);
+                localStorage.clear();
+                alert("Data bersih. Halaman akan dimuat ulang.");
+                location.reload();
             }
-            alert("Memori bersih. Halaman akan dimuat ulang.");
-            location.reload();
         }
 
-        // Register Service Worker
+        // Service Worker
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
     </script>
 </body>
