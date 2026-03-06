@@ -358,7 +358,7 @@
         window.resetChat = function() {
             if(engine) engine.resetChat();
             messages = []; // FIX: Hapus histori pesan secara eksplisit
-            document.getElementById("reset-suggestion")?.classList.add("hidden'); // Sembunyikan lagi pengingat
+            document.getElementById("reset-suggestion")?.classList.add("hidden"); // Sembunyikan lagi pengingat
             document.getElementById("chat-box").innerHTML = ''; // Clear chat
             document.getElementById("empty-state").classList.remove("hidden"); // Show welcome again
             if(document.getElementById("sidebar").classList.contains("sidebar-open")) toggleSidebar();
